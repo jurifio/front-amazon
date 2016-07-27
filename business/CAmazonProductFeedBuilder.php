@@ -5,7 +5,7 @@ namespace bamboo\amazon\business;
 use bamboo\core\application\AApplication;
 
 /**
- * Class CProductFeedBuilder
+ * Class CAmazonProductFeedBuilder
  * @package bamboo\amazon\business
  *
  * @author Bambooshoot Team <emanuele@bambooshoot.agency>
@@ -17,7 +17,7 @@ use bamboo\core\application\AApplication;
  * @date 27/07/2016
  * @since 1.0
  */
-class CProductFeedBuilder {
+class CAmazonProductFeedBuilder {
 
 	/**
 	 * @var AApplication
