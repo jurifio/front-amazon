@@ -25,11 +25,19 @@ class CAmazonProductFeedBuilder
 	 */
 	protected $app;
 
+	/**
+	 * CAmazonProductFeedBuilder constructor.
+	 * @param AApplication $app
+	 */
 	public function __construct(AApplication $app)
 	{
 		$this->app = $app;
 	}
 
+	/**
+	 * @param bool $indent
+	 * @return string
+	 */
 	public function prepare($indent = false)
 	{
 		$sql = "SELECT 	productId, 
@@ -41,7 +49,7 @@ class CAmazonProductFeedBuilder
 				WHERE 	m.id = mahp.marketplaceId 
 					AND m.name = 'Amazon'";
 		$res = $this->app->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, []);
-		var_dump($res);
+
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
@@ -53,11 +61,11 @@ class CAmazonProductFeedBuilder
 			$writer->writeElement('MessageID',$i);
 			$writer->writeElement('OperationType','Insert');
 			$writer->startElement('Product');
-			$this->writeProduct($marketPlaceAccountHasProduct->product,$indent);
+			$writer->writeRaw($this->writeProduct($marketPlaceAccountHasProduct->product,$indent));
 			$writer->endElement();
 			$writer->endElement();
 		}
-		var_dump($writer->outputMemory());
+		return $writer->outputMemory();
 	}
 
 	/**
@@ -84,7 +92,10 @@ class CAmazonProductFeedBuilder
 		$writer->writeElement('Brand',$product->productBrand->name);
 		$writer->writeElement('Description',$product->getDescription());
 		foreach ($product->productSheetActual as $sheetPage) {
-			$writer->writeElement('BulletPoint',$sheetPage->productDetail->productDetailTranslation->getFirst()->name);
+			try{
+				$writer->writeElement('BulletPoint',$sheetPage->productDetail->productDetailTranslation->getFirst()->name);
+			} catch (\Exception $e){}
+
 		}
 		$writer->writeElement('Manufacturer',$product->productBrand->name);
 		$writer->writeElement('MfrPartNumber',$product->itemno);
@@ -100,6 +111,7 @@ class CAmazonProductFeedBuilder
 		$writer->writeElement('Parentage','variation-parent');
 		$writer->startElement('VariationData');
 		$writer->writeElement('VariationTheme','Size');
+		$writer->endElement();
 		$writer->endElement();
 
 		return $writer->outputMemory();
