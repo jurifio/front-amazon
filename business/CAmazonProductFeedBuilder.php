@@ -41,19 +41,23 @@ class CAmazonProductFeedBuilder
 				WHERE 	m.id = mahp.marketplaceId 
 					AND m.name = 'Amazon'";
 		$res = $this->app->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, []);
+		var_dump($res);
 		$writer = new \XMLWriter();
+		$writer->openMemory();
 		$writer->setIndent($indent);
 		$i = 0;
-		foreach ($res as $marketPlaceAccountHasProduct) {
+		foreach ($res as $marketPlaceAccountHasProduct)
+		{
 			$i++;
 			$writer->startElement('Message');
 			$writer->writeElement('MessageID',$i);
 			$writer->writeElement('OperationType','Insert');
 			$writer->startElement('Product');
 			$this->writeProduct($marketPlaceAccountHasProduct->product,$indent);
-
-
+			$writer->endElement();
+			$writer->endElement();
 		}
+		var_dump($writer->outputMemory());
 	}
 
 	/**
@@ -63,8 +67,8 @@ class CAmazonProductFeedBuilder
 	 */
 	protected function writeProduct(CProduct $product, $indent = false) {
 		$writer = new \XMLWriter();
+		$writer->openMemory();
 		$writer->setIndent($indent);
-
 		$writer->writeElement('SKU',$product->printId());
 		$writer->startElement('StandardProductID');
 		$writer->writeElement('Type','EAN');
@@ -98,6 +102,6 @@ class CAmazonProductFeedBuilder
 		$writer->writeElement('VariationTheme','Size');
 		$writer->endElement();
 
-		return "";
+		return $writer->outputMemory();
 	}
 }
