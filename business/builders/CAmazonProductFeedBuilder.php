@@ -92,6 +92,7 @@ class CAmazonProductFeedBuilder
 		$writer->endElement();
 		$writer->endElement();
 
-		return $writer->outputMemory();
+		$this->rawBody = $writer->outputMemory();
+		return $this;
 	}
 }

@@ -44,7 +44,8 @@ class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
 			$writer->endElement();
 			$writer->endElement();
 		}
-		return $writer->outputMemory();
+		$this->rawBody = $writer->outputMemory();
+		return $this;
 	}
 
 	/**
@@ -61,6 +62,7 @@ class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('Type','EAN');
 		$writer->writeElement('Value','abracadabra');
 		$writer->endElement();
+
 		$writer->writeElement('ProductTaxCode','A_GEN_TAX');
 		$writer->writeElement('LaunchDate',(new \DateTime())->format(DATE_ATOM));
 		$writer->writeElement('ReleaseDate',(new \DateTime())->format(DATE_ATOM));
@@ -78,19 +80,21 @@ class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
 		}
 		$writer->writeElement('Manufacturer',$product->productBrand->name);
 		$writer->writeElement('MfrPartNumber',$product->itemno);
-
 		$writer->writeElement('SearchTerms',$product->productBrand->name);
 		$writer->writeElement('SearchTerms',$product->itemno);
 		$writer->writeElement('ItemType',$product->productCategory->getFirst()->getLocalizedName());
 		$writer->writeElement('IsGiftWrapAvailable','true');
 		$writer->writeElement('IsGiftMessageAvailable','true');
 		$writer->endElement();
+
 		$writer->endElement();
+
 		$writer->startElement('Home');
 		$writer->writeElement('Parentage','variation-parent');
 		$writer->startElement('VariationData');
 		$writer->writeElement('VariationTheme','Size');
 		$writer->endElement();
+
 		$writer->endElement();
 
 		return $writer->outputMemory();

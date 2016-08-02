@@ -8,13 +8,16 @@ use bamboo\core\base\CObjectCollection;
 
 /**
  * Class AAmazonFeedBuilder
- * @package bamboo\front\amazon\business\builders
- * @author Bambooshoot Team <emanuele@bambooshoot.agency>, 02/08/2016
+ * @package bamboo\amazon\business\builders
+ *
+ * @author Bambooshoot Team <emanuele@bambooshoot.agency>
+ *
  * @copyright (c) Bambooshoot snc - All rights reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
  *
- * @since ${VERSION}
+ * @date 02/08/2016
+ * @since 1.0
  */
 abstract class AAmazonFeedBuilder
 {

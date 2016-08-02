@@ -43,7 +43,8 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 			$writer->endElement();
 			$writer->endElement();
 		}
-		return $writer->outputMemory();
+		$this->rawBody = $writer->outputMemory();
+		return $this;
 	}
 
 	/**

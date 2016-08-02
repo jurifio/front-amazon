@@ -34,8 +34,6 @@ class CAmazonImageFeedBuilder
 
 	public function sendProducts()
 	{
-		$productSet = [];
-
 		$sql = "SELECT 	productId, 
 						productVariantId, 
 						marketplaceId,
@@ -47,7 +45,6 @@ class CAmazonImageFeedBuilder
 		$res = $this->app->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, []);
 
 		$product = new CAmazonProductFeedBuilder($this->app);
-		$product->prepare($res);
-		$product->call();
+		$product->prepare($res)->call();
 	}
 }

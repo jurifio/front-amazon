@@ -55,7 +55,8 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 				$writer->endElement();
 			}
 		}
-		return $writer->outputMemory();
+		$this->rawBody = $writer->outputMemory();
+		return $this;
 	}
 
 	/**
