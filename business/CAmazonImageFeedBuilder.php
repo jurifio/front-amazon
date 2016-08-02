@@ -4,6 +4,7 @@ namespace bamboo\amazon\business;
 
 use bamboo\core\application\AApplication;
 use bamboo\domain\entities\CProduct;
+use bamboo\domain\entities\CProductPhoto;
 
 /**
  * Class CAmazonProductFeedBuilder
@@ -53,17 +54,32 @@ class CAmazonImageFeedBuilder
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
+		$amazon = $this->app->cfg()->fetch("general","product-photo-host");
 		$i = 0;
 		foreach ($res as $marketPlaceAccountHasProduct)
 		{
-			$i++;
-			$writer->startElement('Message');
-			$writer->writeElement('MessageID',$i);
-			$writer->writeElement('OperationType','Insert');
-			$writer->startElement('Product');
-			$writer->writeRaw($this->writeProduct($marketPlaceAccountHasProduct->product,$indent));
-			$writer->endElement();
-			$writer->endElement();
+			$path = $amazon.'/'.$marketPlaceAccountHasProduct->product->productBrand.'/';
+			foreach ($marketPlaceAccountHasProduct->product->productPhoto as $productPhoto) {
+				/** @var $productPhoto CProductPhoto */
+				if(!$productPhoto->isBig()) continue;
+				$i++;
+				$writer->startElement('Message');
+				$writer->writeElement('MessageID',$i);
+				$writer->writeElement('OperationType','Insert');
+				$writer->startElement('ProductImage');
+				$writer->writeElement('SKU',$marketPlaceAccountHasProduct->product->printId());
+				switch ($productPhoto->order) {
+					case '1':
+						$type = "Main";
+						break;
+					default: $type = "PT".$productPhoto->order;
+				}
+				$writer->writeElement('ImageType',$type);
+				$writer->writeElement('ImageLocatio',$path.$productPhoto->name);
+				$writer->writeRaw($this->writeProduct($marketPlaceAccountHasProduct->product,$indent));
+				$writer->endElement();
+				$writer->endElement();
+			}
 		}
 		return $writer->outputMemory();
 	}
