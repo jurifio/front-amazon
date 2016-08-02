@@ -1,10 +1,10 @@
 <?php
 
-namespace bamboo\amazon\business;
+namespace bamboo\amazon\business\builders;
 
 use bamboo\core\application\AApplication;
+use bamboo\core\base\CObjectCollection;
 use bamboo\domain\entities\CProduct;
-use bamboo\domain\entities\CProductPhoto;
 
 /**
  * Class CAmazonProductFeedBuilder
@@ -19,67 +19,30 @@ use bamboo\domain\entities\CProductPhoto;
  * @date 27/07/2016
  * @since 1.0
  */
-class CAmazonImageFeedBuilder
+class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
 {
-	/**
-	 * @var AApplication
-	 */
-	protected $app;
 
 	/**
-	 * CAmazonProductFeedBuilder constructor.
-	 * @param AApplication $app
-	 */
-	public function __construct(AApplication $app)
-	{
-		$this->app = $app;
-	}
-
-	/**
+	 * @param CObjectCollection $marketPlaceAccountHasProducts
 	 * @param bool $indent
 	 * @return string
 	 */
-	public function prepare($indent = false)
+	public function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false)
 	{
-		$sql = "SELECT 	productId, 
-						productVariantId, 
-						marketplaceId,
-						marketplaceAccountId 
-				FROM 	MarketplaceAccountHasProduct mahp, 
-						Marketplace m 
-				WHERE 	m.id = mahp.marketplaceId 
-					AND m.name = 'Amazon'";
-		$res = $this->app->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, []);
-
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
-		$amazon = $this->app->cfg()->fetch("general","product-photo-host");
 		$i = 0;
-		foreach ($res as $marketPlaceAccountHasProduct)
+		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
 		{
-			$path = $amazon.'/'.$marketPlaceAccountHasProduct->product->productBrand.'/';
-			foreach ($marketPlaceAccountHasProduct->product->productPhoto as $productPhoto) {
-				/** @var $productPhoto CProductPhoto */
-				if(!$productPhoto->isBig()) continue;
-				$i++;
-				$writer->startElement('Message');
-				$writer->writeElement('MessageID',$i);
-				$writer->writeElement('OperationType','Insert');
-				$writer->startElement('ProductImage');
-				$writer->writeElement('SKU',$marketPlaceAccountHasProduct->product->printId());
-				switch ($productPhoto->order) {
-					case '1':
-						$type = "Main";
-						break;
-					default: $type = "PT".$productPhoto->order;
-				}
-				$writer->writeElement('ImageType',$type);
-				$writer->writeElement('ImageLocatio',$path.$productPhoto->name);
-				$writer->writeRaw($this->writeProduct($marketPlaceAccountHasProduct->product,$indent));
-				$writer->endElement();
-				$writer->endElement();
-			}
+			$i++;
+			$writer->startElement('Message');
+			$writer->writeElement('MessageID',$i);
+			$writer->writeElement('OperationType','Upd');
+			$writer->startElement('Product');
+			$writer->writeRaw($this->writeProduct($marketPlaceAccountHasProduct->product,$indent));
+			$writer->endElement();
+			$writer->endElement();
 		}
 		return $writer->outputMemory();
 	}

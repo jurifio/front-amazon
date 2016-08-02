@@ -1,8 +1,9 @@
 <?php
 
-namespace bamboo\amazon\business;
+namespace bamboo\amazon\business\builders;
 
 use bamboo\core\application\AApplication;
+use bamboo\core\base\CObjectCollection;
 use bamboo\domain\entities\CProduct;
 use bamboo\domain\entities\CProductSku;
 
@@ -19,43 +20,16 @@ use bamboo\domain\entities\CProductSku;
  * @date 27/07/2016
  * @since 1.0
  */
-class CAmazonInventoryFeedBuilder
+class CAmazonInventoryFeedBuilder extends AAmazonFeedBuilder
 {
-	/**
-	 * @var AApplication
-	 */
-	protected $app;
 
-	/**
-	 * CAmazonProductFeedBuilder constructor.
-	 * @param AApplication $app
-	 */
-	public function __construct(AApplication $app)
+	public function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false)
 	{
-		$this->app = $app;
-	}
-
-	/**
-	 * @param bool $indent
-	 * @return string
-	 */
-	public function prepare($indent = false)
-	{
-		$sql = "SELECT 	productId, 
-						productVariantId, 
-						marketplaceId,
-						marketplaceAccountId 
-				FROM 	MarketplaceAccountHasProduct mahp, 
-						Marketplace m 
-				WHERE 	m.id = mahp.marketplaceId 
-					AND m.name = 'Amazon'";
-		$res = $this->app->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, []);
-
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$i = 0;
-		foreach ($res as $marketPlaceAccountHasProduct)
+		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
 		{
 			foreach ($marketPlaceAccountHasProduct->product->productSku as $sku) {
 				$i++;

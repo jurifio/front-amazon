@@ -1,8 +1,9 @@
 <?php
 
-namespace bamboo\amazon\business;
+namespace bamboo\amazon\business\builders;
 
 use bamboo\core\application\AApplication;
+use bamboo\core\base\CObjectCollection;
 use bamboo\domain\entities\CProduct;
 
 /**
@@ -18,48 +19,25 @@ use bamboo\domain\entities\CProduct;
  * @date 27/07/2016
  * @since 1.0
  */
-class CAmazonRelationshipFeedBuilder
+class CAmazonOverridesFeedBuilder extends AAmazonFeedBuilder
 {
 	/**
-	 * @var AApplication
-	 */
-	protected $app;
-
-	/**
-	 * CAmazonProductFeedBuilder constructor.
-	 * @param AApplication $app
-	 */
-	public function __construct(AApplication $app)
-	{
-		$this->app = $app;
-	}
-
-	/**
+	 * @param CObjectCollection $marketPlaceAccountHasProducts
 	 * @param bool $indent
 	 * @return string
 	 */
-	public function prepare($indent = false)
+	public function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false)
 	{
-		$sql = "SELECT 	productId, 
-						productVariantId, 
-						marketplaceId,
-						marketplaceAccountId 
-				FROM 	MarketplaceAccountHasProduct mahp, 
-						Marketplace m 
-				WHERE 	m.id = mahp.marketplaceId 
-					AND m.name = 'Amazon'";
-		$res = $this->app->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, []);
-
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$i = 0;
-		foreach ($res as $marketPlaceAccountHasProduct)
+		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
 		{
 			$i++;
 			$writer->startElement('Message');
 			$writer->writeElement('MessageID',$i);
-			$writer->writeElement('OperationType','Upd');
+			$writer->writeElement('OperationType','Insert');
 			$writer->startElement('Product');
 			$writer->writeRaw($this->writeProduct($marketPlaceAccountHasProduct->product,$indent));
 			$writer->endElement();
