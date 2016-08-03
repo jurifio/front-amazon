@@ -73,6 +73,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('ReleaseDate',(new \DateTime())->format(DATE_ATOM));
 		$writer->startElement('Condition');
 		$writer->writeElement('ConditionType','New');
+		$writer->endElement();
 		$writer->startElement('DescriptionData');
 		$writer->writeElement('Title',$product->getName());
 		$writer->writeElement('Brand',$product->productBrand->name);
