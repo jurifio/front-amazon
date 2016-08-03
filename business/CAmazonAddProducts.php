@@ -2,6 +2,7 @@
 
 namespace bamboo\amazon\business;
 
+use bamboo\amazon\business\builders\CAmazonImageFeedBuilder;
 use bamboo\amazon\business\builders\CAmazonInventoryFeedBuilder;
 use bamboo\amazon\business\builders\CAmazonPricingFeedBuilder;
 use bamboo\amazon\business\builders\CAmazonProductFeedBuilder;
@@ -61,7 +62,7 @@ class CAmazonAddProducts
 		$pricing = new CAmazonPricingFeedBuilder($this->app);
 		$this->send($pricing->prepare($res,true)->getRawBody());
 
-		$image = new CAmazonInventoryFeedBuilder($this->app);
+		$image = new CAmazonImageFeedBuilder($this->app);
 		$this->send($image->prepare($res,true)->getRawBody());
 
 		$relationship = new CAmazonRelationshipFeedBuilder($this->app);

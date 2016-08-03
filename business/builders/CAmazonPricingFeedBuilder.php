@@ -24,7 +24,7 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 	/**
 	 * @param CObjectCollection $marketPlaceAccountHasProducts
 	 * @param bool $indent
-	 * @return string
+	 * @return $this
 	 */
 	public function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false)
 	{
