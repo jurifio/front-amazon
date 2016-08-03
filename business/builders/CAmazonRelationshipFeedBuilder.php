@@ -32,6 +32,7 @@ class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
+		$writer->writeElement('MessageType','Relationship');
 		$i = 0;
 		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{

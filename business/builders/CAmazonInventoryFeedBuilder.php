@@ -29,6 +29,7 @@ class CAmazonInventoryFeedBuilder extends AAmazonFeedBuilder
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
+		$writer->writeElement('MessageType','Inventory');
 		$i = 0;
 		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{

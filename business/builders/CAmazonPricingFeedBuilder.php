@@ -31,6 +31,7 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
+		$writer->writeElement('MessageType','Pricing');
 		$i = 0;
 		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
 		{

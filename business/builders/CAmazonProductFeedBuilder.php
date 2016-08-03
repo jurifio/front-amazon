@@ -31,10 +31,6 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
-		$writer->startElement('Header');
-		$writer->writeElement('DocumentVersion','1.01');
-		$writer->writeElement('MerchantIdentifier','xxxxxx');
-		$writer->endElement();
 		$writer->writeElement('MessageType','Product');
 		$i = 0;
 		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)

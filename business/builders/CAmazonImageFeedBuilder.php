@@ -28,6 +28,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
+		$writer->writeElement('MessageType','Image');
 		$amazon = $this->app->cfg()->fetch("general","product-photo-host");
 		$i = 0;
 		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)

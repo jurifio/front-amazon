@@ -77,6 +77,10 @@ class CAmazonAddProducts
 		$x->startElement('AmazonEnvelope');
 		$x->writeAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
 		$x->writeAttribute("xsi:noNamespaceSchemaLocation","https://images-na.ssl-images-amazon.com/images/G/01/rainier/help/xsd/release_1_9/amzn-envelope.xsd");
+		$x->startElement('Header');
+		$x->writeElement('DocumentVersion','1.01');
+		$x->writeElement('MerchantIdentifier','xxxxxx');
+		$x->endElement();
 		$x->writeRaw($body);
 		$x->endElement();
 		echo $x->outputMemory();
