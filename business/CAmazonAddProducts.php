@@ -2,7 +2,10 @@
 
 namespace bamboo\amazon\business;
 
+use bamboo\amazon\business\builders\CAmazonInventoryFeedBuilder;
+use bamboo\amazon\business\builders\CAmazonPricingFeedBuilder;
 use bamboo\amazon\business\builders\CAmazonProductFeedBuilder;
+use bamboo\amazon\business\builders\CAmazonRelationshipFeedBuilder;
 use bamboo\core\application\AApplication;
 use bamboo\domain\entities\CMarketplaceAccountHasProduct;
 
@@ -48,9 +51,35 @@ class CAmazonAddProducts
 		foreach ($res as $re) {
 			$this->prepareSkus($re);
 		}
-		$product = new CAmazonProductFeedBuilder($this->app);
 
-		return (string)$product->prepare($res,true)->getRawBody();
+		$product = new CAmazonProductFeedBuilder($this->app);
+		$this->send($product->prepare($res,true)->getRawBody());
+
+		$inventary = new CAmazonInventoryFeedBuilder($this->app);
+		$this->send($inventary->prepare($res,true)->getRawBody());
+
+		$pricing = new CAmazonPricingFeedBuilder($this->app);
+		$this->send($pricing->prepare($res,true)->getRawBody());
+
+		$image = new CAmazonInventoryFeedBuilder($this->app);
+		$this->send($image->prepare($res,true)->getRawBody());
+
+		$relationship = new CAmazonRelationshipFeedBuilder($this->app);
+		$this->send($relationship->prepare($res,true)->getRawBody());
+
+	}
+
+	public function send($body) {
+		$x = new \XMLWriter();
+		$x->openMemory();
+		$x->setIndent(true);
+		$x->startDocument();
+		$x->startElement('AmazonEnvelope');
+		$x->writeAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
+		$x->writeAttribute("xsi:noNamespaceSchemaLocation","https://images-na.ssl-images-amazon.com/images/G/01/rainier/help/xsd/release_1_9/amzn-envelope.xsd");
+		$x->writeRaw($body);
+		$x->endElement();
+		echo $x->outputMemory();
 	}
 
 	public function prepareSkus(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct)

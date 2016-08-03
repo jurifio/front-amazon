@@ -64,8 +64,16 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		return $this;
 	}
 
-	protected function writeProductData(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct, $indent = false)
+	protected function writeProductData($productIncoming, $indent = false)
 	{
+		if($productIncoming instanceof CMarketplaceAccountHasProduct) {
+			$marketplaceAccountHasProduct = $productIncoming;
+			$isParent = true;
+		} elseif($productIncoming instanceof CMarketplaceAccountHasProductSku) {
+			$isParent = false;
+			$marketplaceAccountHasProduct = $productIncoming->marketplaceAccountHasProduct;
+		} else throw new \Exception('olè');
+
 		$product = $marketplaceAccountHasProduct->product;
 
 		$writer = new \XMLWriter();
@@ -111,7 +119,12 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		//$builder = "build" . ucfirst($category->config['feedType']);
 		$builder = "buildShoes";
 		if (method_exists($this, $builder) && is_callable(array($this, $builder))) {
-			$writer->writeRaw($this->$builder($product,$indent));
+			if($isParent) {
+				$writer->writeRaw($this->$builder($marketplaceAccountHasProduct,$indent));
+			} else {
+				$writer->writeRaw($this->$builder($productIncoming,$indent));
+			}
+
 		} else {
 
 		}
@@ -173,9 +186,15 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->setIndent($indent);
 		$writer->startElement('Shoes');
 		$writer->writeElement('ClothingType','Shoes');
+
 		$writer->startElement('VariationData');
 		$writer->writeElement('Parentage',$isParent ? 'parent' : 'child');
+		if(!$isParent) {
+			$writer->writeElement('Size',$marketplaceProductSku->productSku->getFirst()->productSize->name);
+		}
 		$writer->writeElement('VariationTheme','Size');
+		$writer->endElement();
+		$writer->startElement('ClassificationData');
 		$writer->endElement();
 		$writer->endElement();
 		return $writer->outputMemory();

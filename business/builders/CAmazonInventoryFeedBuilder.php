@@ -4,6 +4,7 @@ namespace bamboo\amazon\business\builders;
 
 use bamboo\core\application\AApplication;
 use bamboo\core\base\CObjectCollection;
+use bamboo\domain\entities\CMarketplaceAccountHasProductSku;
 use bamboo\domain\entities\CProduct;
 use bamboo\domain\entities\CProductSku;
 
@@ -23,21 +24,21 @@ use bamboo\domain\entities\CProductSku;
 class CAmazonInventoryFeedBuilder extends AAmazonFeedBuilder
 {
 
-	public function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false)
+	public function prepare(CObjectCollection $marketplaceAccountHasProducts, $indent = false)
 	{
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$i = 0;
-		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
+		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{
-			foreach ($marketPlaceAccountHasProduct->product->productSku as $sku) {
+			foreach ($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $sku) {
 				$i++;
 				$writer->startElement('Message');
 				$writer->writeElement('MessageID',$i);
 				$writer->writeElement('OperationType','Update');
 				$writer->startElement('Inventory');
-				$writer->writeRaw($this->writeProductSku($marketPlaceAccountHasProduct->product,$indent));
+				$writer->writeRaw($this->writeProductSku($sku,$indent));
 				$writer->endElement();
 				$writer->endElement();
 			}
@@ -47,17 +48,21 @@ class CAmazonInventoryFeedBuilder extends AAmazonFeedBuilder
 	}
 
 	/**
-	 * @param CProductSku $sku
+	 * @param CMarketplaceAccountHasProductSku $sku
 	 * @param bool $indent
 	 * @return string
 	 */
-	protected function writeProductSku(CProductSku $sku, $indent = false) {
+	protected function writeProductSku(CMarketplaceAccountHasProductSku $sku, $indent = false) {
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
-		$writer->writeElement('SKU',$sku->printPublicSku());
+		$writer->writeElement('SKU',$sku->productSku->getFirst()->printPublicSku());
 		$writer->writeElement('FulfillmentCenterID','DEFAULT');
-		$writer->writeElement('Quantity',$sku->stockQty);
+		$qty = 0;
+		foreach ($sku->productSku as $productSku) {
+			$qty+= $productSku->stockQty;
+		}
+		$writer->writeElement('Quantity',$qty);
 		$writer->endElement();
 
 		return $writer->outputMemory();

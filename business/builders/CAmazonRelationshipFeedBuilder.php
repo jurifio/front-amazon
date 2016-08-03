@@ -23,24 +23,30 @@ class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
 {
 
 	/**
-	 * @param CObjectCollection $marketPlaceAccountHasProducts
+	 * @param CObjectCollection $marketplaceAccountHasProducts
 	 * @param bool $indent
-	 * @return string
+	 * @return $this
 	 */
-	public function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false)
+	public function prepare(CObjectCollection $marketplaceAccountHasProducts, $indent = false)
 	{
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$i = 0;
-		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
+		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{
 			$i++;
 			$writer->startElement('Message');
 			$writer->writeElement('MessageID',$i);
 			$writer->writeElement('OperationType','Update');
-			$writer->startElement('Product');
-			$writer->writeRaw($this->writeProduct($marketPlaceAccountHasProduct->product,$indent));
+			$writer->startElement('Relationship');
+			$writer->writeElement('ParentSKU',$marketplaceAccountHasProduct->product->printId());
+			foreach ($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketplaceAccountHasProductSku) {
+				$writer->startElement('Relation');
+				$writer->writeElement('SKU',$marketplaceAccountHasProductSku->productSku->getFirst()->printPublicSku());
+				$writer->writeElement('Type','Variation');
+				$writer->endElement();
+			}
 			$writer->endElement();
 			$writer->endElement();
 		}
