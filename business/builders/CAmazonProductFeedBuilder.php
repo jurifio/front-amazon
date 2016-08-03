@@ -46,13 +46,13 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 			$writer->endElement();
 			$writer->endElement();
 
-			foreach($marketPlaceAccountHasProduct->product->productSku as $productSku) {
+			foreach($marketPlaceAccountHasProduct->marketPlaceAccountHasProductSku as $marketPlaceAccountHasProductSku) {
 				$i++;
 				$writer->startElement('Message');
 				$writer->writeElement('MessageID',$i);
 				$writer->writeElement('OperationType','Update');
 				$writer->startElement('Product');
-				$writer->writeRaw($this->writeChildProduct($marketPlaceAccountHasProduct,$indent));
+				$writer->writeRaw($this->writeChildProduct($marketPlaceAccountHasProductSku,$indent));
 				$writer->endElement();
 				$writer->endElement();
 
@@ -109,9 +109,15 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 			}
 		}
 		$category = $mCategoryIds[0];
-		$writer->writeElement('RecommendedBrowseNode',$category[0]->marketplaceCategoryId);
+		$writer->writeElement('RecommendedBrowseNode',$category->marketplaceCategoryId);
 		$writer->startElement('ProductData');
-		$writer->writeRaw($this->{'build'.$category->config['feedType']}($product,$indent));
+
+		$builder = "get" . ucfirst($category->config['feedType']);
+		if (method_exists($this, $builder) && is_callable(array($this, $builder))) {
+			 $this->$builder($product,$indent);
+		} else {
+
+		}
 		$writer->endElement();
 
 		return $writer->outputMemory();

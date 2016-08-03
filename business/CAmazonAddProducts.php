@@ -4,8 +4,7 @@ namespace bamboo\amazon\business;
 
 use bamboo\amazon\business\builders\CAmazonProductFeedBuilder;
 use bamboo\core\application\AApplication;
-use bamboo\domain\entities\CProduct;
-use bamboo\domain\entities\CProductPhoto;
+use bamboo\domain\entities\CMarketplaceAccountHasProduct;
 
 /**
  * Class CAmazonImageFeedBuilder
@@ -20,7 +19,7 @@ use bamboo\domain\entities\CProductPhoto;
  * @date 02/08/2016
  * @since 1.0
  */
-class CAmazonImageFeedBuilder
+class CAmazonAddProducts
 {
 	/**
 	 * @var AApplication
@@ -46,5 +45,37 @@ class CAmazonImageFeedBuilder
 
 		$product = new CAmazonProductFeedBuilder($this->app);
 		$product->prepare($res)->call();
+	}
+
+	public function prepareSkus(CMarketplaceAccountHasProduct $res)
+	{
+		$sizesDone = [];
+		foreach ($res as $marketplaceAccountHasProduct) {
+			foreach ($marketplaceAccountHasProduct->product->productSku as $sku) {
+				$marketSku = $this->app->repoFactory->create('MarketplaceAccountHasProductSku')->getEmptyEntity();
+				if(!isset($sizesDone[$sku->productSizeId])) {
+					$sizesDone[$sku->productSizeId] = $sku->stockQty;
+					$marketSku->productSizeId = $sku->productSizeId;
+					$marketSku->productId = $sku->productId;
+					$marketSku->productVariantId = $sku->productVariantId;
+					$marketSku->marketplaceId = $marketplaceAccountHasProduct->productSizeId;
+					$marketSku->marketplaceAccountId = $marketplaceAccountHasProduct->marketplaceAccountId;
+					$marketSku->qty = $sku->stockQty;
+					$marketSku->insert();
+				} else {
+					$sizesDone[$sku->productSizeId] += $sku->stockQty;
+
+					$marketSku->productSizeId = $sku->productSizeId;
+					$marketSku->productId = $sku->productId;
+					$marketSku->productVariantId = $sku->productVariantId;
+					$marketSku->marketplaceId = $marketplaceAccountHasProduct->productSizeId;
+					$marketSku->marketplaceAccountId = $marketplaceAccountHasProduct->marketplaceAccountId;
+					$marketSku = $marketSku->em()->findOneBy($marketSku->getIds());
+					$marketSku->qty = $sizesDone[$sku->productSizeId];
+
+					$marketSku->update();
+				}
+			}
+		}
 	}
 }
