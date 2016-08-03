@@ -49,37 +49,27 @@ class CAmazonAddProducts
 			$this->prepareSkus($re);
 		}
 		$product = new CAmazonProductFeedBuilder($this->app);
-        return (string) $product->prepare($res)->getRawBody();
+
+		return (string)$product->prepare($res,true)->getRawBody();
 	}
 
-	public function prepareSkus(CMarketplaceAccountHasProduct $res)
+	public function prepareSkus(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct)
 	{
 		$sizesDone = [];
-		foreach ($res as $marketplaceAccountHasProduct) {
-			foreach ($marketplaceAccountHasProduct->product->productSku as $sku) {
-				$marketSku = $this->app->repoFactory->create('MarketplaceAccountHasProductSku')->getEmptyEntity();
-				if(!isset($sizesDone[$sku->productSizeId])) {
-					$sizesDone[$sku->productSizeId] = $sku->stockQty;
-					$marketSku->productSizeId = $sku->productSizeId;
-					$marketSku->productId = $sku->productId;
-					$marketSku->productVariantId = $sku->productVariantId;
-					$marketSku->marketplaceId = $marketplaceAccountHasProduct->productSizeId;
-					$marketSku->marketplaceAccountId = $marketplaceAccountHasProduct->marketplaceAccountId;
-					$marketSku->qty = $sku->stockQty;
-					$marketSku->insert();
-				} else {
-					$sizesDone[$sku->productSizeId] += $sku->stockQty;
-
-					$marketSku->productSizeId = $sku->productSizeId;
-					$marketSku->productId = $sku->productId;
-					$marketSku->productVariantId = $sku->productVariantId;
-					$marketSku->marketplaceId = $marketplaceAccountHasProduct->productSizeId;
-					$marketSku->marketplaceAccountId = $marketplaceAccountHasProduct->marketplaceAccountId;
-					$marketSku = $marketSku->em()->findOneBy($marketSku->getIds());
-					$marketSku->qty = $sizesDone[$sku->productSizeId];
-
-					$marketSku->update();
-				}
+		foreach ($marketplaceAccountHasProduct->product->productSku as $sku) {
+			$marketSku = $this->app->repoFactory->create('MarketplaceAccountHasProductSku')->getEmptyEntity();
+			$marketSku->productSizeId = $sku->productSizeId;
+			$marketSku->productId = $sku->productId;
+			$marketSku->productVariantId = $sku->productVariantId;
+			$marketSku->marketplaceId = $marketplaceAccountHasProduct->marketplaceId;
+			$marketSku->marketplaceAccountId = $marketplaceAccountHasProduct->marketplaceAccountId;
+			$existingMarket = $marketSku->em()->findOneBy($marketSku->getIds());
+			if (is_null($existingMarket)) {
+				$sizesDone[$sku->productSizeId] = $sku->stockQty;
+				$marketSku->insert();
+			} else {
+				//$sizesDone[$sku->productSizeId] += $sku->stockQty;
+				//$existingMarket->update();
 			}
 		}
 	}

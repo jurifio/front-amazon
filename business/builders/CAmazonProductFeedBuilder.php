@@ -2,12 +2,10 @@
 
 namespace bamboo\amazon\business\builders;
 
-use bamboo\core\application\AApplication;
 use bamboo\core\base\CObjectCollection;
 use bamboo\domain\entities\CMarketplaceAccountHasProduct;
 use bamboo\domain\entities\CMarketplaceAccountHasProductSku;
 use bamboo\domain\entities\CProduct;
-use bamboo\domain\entities\CProductSku;
 
 /**
  * Class CAmazonProductFeedBuilder
@@ -29,13 +27,13 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 	 * @param bool $indent
 	 * @return $this
 	 */
-	public function prepare(CObjectCollection $marketplaceAccountHasProduct, $indent = false)
+	public function prepare(CObjectCollection $marketplaceAccountHasProducts, $indent = false)
 	{
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$i = 0;
-		foreach ($marketplaceAccountHasProduct as $marketplaceAccountHasProduct)
+		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{
 			$i++;
 			$writer->startElement('Message');
@@ -140,7 +138,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 
 	protected function writeChildProduct(CMarketplaceAccountHasProductSku $marketplaceAccountHasProductSku, $indent = false)
 	{
-		$marketplaceAccountHasProduct = $marketplaceAccountHasProductSku->marketPlaceAccountHasProduct;
+		$marketplaceAccountHasProduct = $marketplaceAccountHasProductSku->marketplaceAccountHasProduct;
 		$productSkuSample = $marketplaceAccountHasProductSku->productSku->getFirst();
 		$product = $marketplaceAccountHasProduct->product;
 
@@ -152,7 +150,8 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('Type','EAN');
 		$writer->writeElement('Value',$productSkuSample->barcode);
 		$writer->endElement();
-		return $writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
+		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
+		return $writer->outputMemory();
 	}
 
 	protected function buildShoes(CProduct $product, $indent = false)
