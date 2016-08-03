@@ -31,6 +31,9 @@ class CAmazonAddProducts
 		$this->app = $app;
 	}
 
+	/**
+	 * @return string
+	 */
 	public function sendProducts()
 	{
 		$sql = "SELECT 	productId, 
@@ -42,9 +45,11 @@ class CAmazonAddProducts
 				WHERE 	m.id = mahp.marketplaceId 
 					AND m.name = 'Amazon'";
 		$res = $this->app->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, []);
-
+		foreach ($res as $re) {
+			$this->prepareSkus($re);
+		}
 		$product = new CAmazonProductFeedBuilder($this->app);
-		$product->prepare($res)->call();
+        return (string) $product->prepare($res)->getRawBody();
 	}
 
 	public function prepareSkus(CMarketplaceAccountHasProduct $res)

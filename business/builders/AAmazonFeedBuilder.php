@@ -45,5 +45,13 @@ abstract class AAmazonFeedBuilder
 		}
 	}
 
+	/**
+	 * @return string
+	 */
+	public function getRawBody()
+	{
+		return $this->rawBody;
+	}
+
 	public abstract function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false);
 }

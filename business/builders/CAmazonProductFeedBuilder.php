@@ -25,58 +25,51 @@ use bamboo\domain\entities\CProductSku;
 class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 {
 	/**
-	 * @param CObjectCollection $marketPlaceAccountHasProducts
+	 * @param CObjectCollection $marketplaceAccountHasProduct
 	 * @param bool $indent
-	 * @return string
+	 * @return $this
 	 */
-	public function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false)
+	public function prepare(CObjectCollection $marketplaceAccountHasProduct, $indent = false)
 	{
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$i = 0;
-		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
+		foreach ($marketplaceAccountHasProduct as $marketplaceAccountHasProduct)
 		{
 			$i++;
 			$writer->startElement('Message');
 			$writer->writeElement('MessageID',$i);
 			$writer->writeElement('OperationType','Update');
 			$writer->startElement('Product');
-			$writer->writeRaw($this->writeParentProduct($marketPlaceAccountHasProduct,$indent));
+			$writer->writeRaw($this->writeParentProduct($marketplaceAccountHasProduct,$indent));
 			$writer->endElement();
 			$writer->endElement();
 
-			foreach($marketPlaceAccountHasProduct->marketPlaceAccountHasProductSku as $marketPlaceAccountHasProductSku) {
+			foreach($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketplaceAccountHasProductSku) {
 				$i++;
 				$writer->startElement('Message');
 				$writer->writeElement('MessageID',$i);
 				$writer->writeElement('OperationType','Update');
 				$writer->startElement('Product');
-				$writer->writeRaw($this->writeChildProduct($marketPlaceAccountHasProductSku,$indent));
+				$writer->writeRaw($this->writeChildProduct($marketplaceAccountHasProductSku,$indent));
 				$writer->endElement();
 				$writer->endElement();
 
 			}
 		}
-		$this->rawBody =  $writer->outputMemory();
+		$this->rawBody = $writer->outputMemory();
+		return $this;
 	}
 
-	/**
-	 * @param CMarketplaceAccountHasProduct $marketPlaceAccountHasProduct
-	 * @param bool $indent
-	 * @return string
-	 */
-	protected function writeParentProduct(CMarketplaceAccountHasProduct $marketPlaceAccountHasProduct, $indent = false)
+	protected function writeProductData(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct, $indent = false)
 	{
-		$product = $marketPlaceAccountHasProduct->product;
+		$product = $marketplaceAccountHasProduct->product;
+
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
-		$writer->writeElement('SKU',$product->printId());
-		$writer->startElement('StandardProductID');
-		$writer->writeElement('Type','EAN');
-		$writer->writeElement('Value','abracadabra');
-		$writer->endElement();
+
 		$writer->writeElement('ProductTaxCode','A_GEN_TAX');
 		$writer->writeElement('LaunchDate',(new \DateTime())->format(DATE_ATOM));
 		$writer->writeElement('ReleaseDate',(new \DateTime())->format(DATE_ATOM));
@@ -104,23 +97,62 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->endElement();
 		$mCategoryIds = [];
 		foreach ($product->productCategory as $category ) {
-			foreach ($category->marketplaceAccountCategory as $mCategory) {
-				if($mCategory->isRelevant) $mCategoryIds[] = $mCategory;
+			foreach ($category->marketplaceAccountCategory->findByKeys(['marketplaceId'=>$marketplaceAccountHasProduct->marketplaceId,'marketplaceAccountId'=>$marketplaceAccountHasProduct->marketplaceAccountId,'isRelevant'=>1]) as $mCategory) {
+				$mCategoryIds[] = $mCategory;
 			}
 		}
-		$category = $mCategoryIds[0];
-		$writer->writeElement('RecommendedBrowseNode',$category->marketplaceCategoryId);
+		//$category = $mCategoryIds[0];
+		//$writer->writeElement('RecommendedBrowseNode',$category->marketplaceCategoryId);
 		$writer->startElement('ProductData');
 
-		$builder = "get" . ucfirst($category->config['feedType']);
+		//$builder = "build" . ucfirst($category->config['feedType']);
+		$builder = "buildShoes";
 		if (method_exists($this, $builder) && is_callable(array($this, $builder))) {
-			 $this->$builder($product,$indent);
+			$this->$builder($product,$indent);
 		} else {
 
 		}
 		$writer->endElement();
+		return $writer->outputMemory();
+	}
+
+	/**
+	 * @param CMarketplaceAccountHasProduct $marketplaceAccountHasProduct
+	 * @param bool $indent
+	 * @return string
+	 */
+	protected function writeParentProduct(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct, $indent = false)
+	{
+		$product = $marketplaceAccountHasProduct->product;
+
+		$writer = new \XMLWriter();
+		$writer->openMemory();
+		$writer->setIndent($indent);
+		$writer->writeElement('SKU',$product->printId());
+		$writer->startElement('StandardProductID');
+		$writer->writeElement('Type','EAN');
+		$writer->writeElement('Value','abracadabra');
+		$writer->endElement();
+		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
 
 		return $writer->outputMemory();
+	}
+
+	protected function writeChildProduct(CMarketplaceAccountHasProductSku $marketplaceAccountHasProductSku, $indent = false)
+	{
+		$marketplaceAccountHasProduct = $marketplaceAccountHasProductSku->marketPlaceAccountHasProduct;
+		$productSkuSample = $marketplaceAccountHasProductSku->productSku->getFirst();
+		$product = $marketplaceAccountHasProduct->product;
+
+		$writer = new \XMLWriter();
+		$writer->openMemory();
+		$writer->setIndent($indent);
+		$writer->writeElement('SKU',$productSkuSample->printPublicSku());
+		$writer->startElement('StandardProductID');
+		$writer->writeElement('Type','EAN');
+		$writer->writeElement('Value',$productSkuSample->barcode);
+		$writer->endElement();
+		return $writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
 	}
 
 	protected function buildShoes(CProduct $product, $indent = false)
@@ -134,7 +166,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('VariationTheme','Size');
 		$writer->endElement();
 		$writer->endElement();
-		$writer->outputMemory();
+		return $writer->outputMemory();
 	}
 
 	protected function buildClothingAccessories(CProduct $product, $indent = false)
@@ -148,22 +180,8 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('VariationTheme','Size');
 		$writer->endElement();
 		$writer->endElement();
-		$writer->outputMemory();
+		return $writer->outputMemory();
 	}
 
-	protected function writeChildProduct(CMarketplaceAccountHasProductSku $marketPlaceAccountHasProductSku, $indent = false)
-	{
-		$marketPlaceAccountHasProduct = $marketPlaceAccountHasProductSku->marketPlaceAccountHasProduct;
-		$productSkus = $marketPlaceAccountHasProductSku->productSku;
-		$productSkuSum = "";
-		foreach ($productSkus as $productSku) {
-			$productSkuSum = $productSku;
-		}
-		$product = $marketPlaceAccountHasProduct->product;
 
-		$writer = new \XMLWriter();
-		$writer->openMemory();
-		$writer->setIndent($indent);
-		$writer->writeElement('SKU',$productSkuSum->printPublicSku());
-	}
 }
