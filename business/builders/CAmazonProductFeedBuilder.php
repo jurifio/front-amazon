@@ -22,7 +22,7 @@ use bamboo\domain\entities\CProductSku;
  * @date 27/07/2016
  * @since 1.0
  */
-class CAmazonProductFeedBuilder
+class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 {
 	/**
 	 * @param CObjectCollection $marketPlaceAccountHasProducts
@@ -117,7 +117,21 @@ class CAmazonProductFeedBuilder
 		return $writer->outputMemory();
 	}
 
-	protected function buildAbbigliamento(CProduct $product, $indent = false)
+	protected function buildShoes(CProduct $product, $indent = false)
+	{
+		$writer = new \XMLWriter();
+		$writer->openMemory();
+		$writer->setIndent($indent);
+		$writer->startElement('Shoes');
+		$writer->writeElement('Parentage','variation-parent');
+		$writer->startElement('VariationData');
+		$writer->writeElement('VariationTheme','Size');
+		$writer->endElement();
+		$writer->endElement();
+		$writer->outputMemory();
+	}
+
+	protected function buildClothingAccessories(CProduct $product, $indent = false)
 	{
 		$writer = new \XMLWriter();
 		$writer->openMemory();
