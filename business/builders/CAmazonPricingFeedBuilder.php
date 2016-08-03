@@ -32,7 +32,7 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$i = 0;
-		foreach ($res as $marketPlaceAccountHasProduct)
+		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
 		{
 			$i++;
 			$writer->startElement('Message');
@@ -52,7 +52,7 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 	 * @param $indent
 	 * @return string
 	 */
-	protected function writeProduct(CProduct $product, $indent = false) {
+	protected function writePrice(CProduct $product, $indent = false) {
 		$writer = new \XMLWriter();
 
 		$writer->openMemory();

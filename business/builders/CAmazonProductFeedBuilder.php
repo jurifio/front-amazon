@@ -5,7 +5,6 @@ namespace bamboo\amazon\business\builders;
 use bamboo\core\base\CObjectCollection;
 use bamboo\domain\entities\CMarketplaceAccountHasProduct;
 use bamboo\domain\entities\CMarketplaceAccountHasProductSku;
-use bamboo\domain\entities\CProduct;
 
 /**
  * Class CAmazonProductFeedBuilder
@@ -23,7 +22,7 @@ use bamboo\domain\entities\CProduct;
 class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 {
 	/**
-	 * @param CObjectCollection $marketplaceAccountHasProduct
+	 * @param CObjectCollection $marketplaceAccountHasProducts
 	 * @param bool $indent
 	 * @return $this
 	 */
@@ -32,6 +31,11 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
+		$writer->startElement('Header');
+		$writer->writeElement('DocumentVersion','1.01');
+		$writer->writeElement('MerchantIdentifier','xxxxxx');
+		$writer->endElement();
+		$writer->writeElement('MessageType','Product');
 		$i = 0;
 		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{
@@ -107,7 +111,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		//$builder = "build" . ucfirst($category->config['feedType']);
 		$builder = "buildShoes";
 		if (method_exists($this, $builder) && is_callable(array($this, $builder))) {
-			$this->$builder($product,$indent);
+			$writer->writeRaw($this->$builder($product,$indent));
 		} else {
 
 		}
@@ -149,33 +153,49 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('SKU',$productSkuSample->printPublicSku());
 		$writer->startElement('StandardProductID');
 		$writer->writeElement('Type','EAN');
-		$writer->writeElement('Value',$productSkuSample->barcode);
+		$writer->writeElement('Value',empty($productSkuSample->barcode) ? '0000000000001' : $productSkuSample->barcode);
 		$writer->endElement();
-		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
+		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProductSku, $indent));
 		return $writer->outputMemory();
 	}
 
-	protected function buildShoes(CProduct $product, $indent = false)
+	protected function buildShoes($product, $indent = false)
 	{
+		if($product instanceof CMarketplaceAccountHasProduct) {
+			$isParent = true;
+		} elseif($product instanceof CMarketplaceAccountHasProductSku) {
+			$isParent = false;
+			$marketplaceProductSku = $product;
+			$product = $marketplaceProductSku->marketplaceAccountHasProduct;
+		} else throw new \Exception('olè');
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$writer->startElement('Shoes');
-		$writer->writeElement('Parentage','variation-parent');
+		$writer->writeElement('ClothingType','Shoes');
 		$writer->startElement('VariationData');
+		$writer->writeElement('Parentage',$isParent ? 'parent' : 'child');
 		$writer->writeElement('VariationTheme','Size');
 		$writer->endElement();
 		$writer->endElement();
 		return $writer->outputMemory();
 	}
 
-	protected function buildClothingAccessories(CProduct $product, $indent = false)
+	protected function buildClothingAccessories($product, $indent = false)
 	{
+		if($product instanceof CMarketplaceAccountHasProduct) {
+			$isParent = true;
+		} elseif($product instanceof CMarketplaceAccountHasProductSku) {
+			$isParent = false;
+			$marketplaceProductSku = $product;
+			$product = $marketplaceProductSku->marketplaceAccountHasProduct;
+		} else throw new \Exception('olè');
+
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$writer->startElement('Home');
-		$writer->writeElement('Parentage','variation-parent');
+		$writer->writeElement('Parentage',$isParent ? 'parent' : 'child');
 		$writer->startElement('VariationData');
 		$writer->writeElement('VariationTheme','Size');
 		$writer->endElement();
