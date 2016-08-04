@@ -33,7 +33,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 		$i = 0;
 		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
 		{
-			$path = $amazon.'/'.$marketPlaceAccountHasProduct->product->productBrand->name.'/';
+			$path = $amazon.$marketPlaceAccountHasProduct->product->productBrand->name.'/';
 			foreach ($marketPlaceAccountHasProduct->product->productPhoto as $productPhoto) {
 				/** @var $productPhoto CProductPhoto */
 				if(!$productPhoto->isBig()) continue;
