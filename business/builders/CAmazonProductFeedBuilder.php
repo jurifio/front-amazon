@@ -112,7 +112,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		//$writer->writeElement('RecommendedBrowseNode',$category->marketplaceCategoryId);
 		$writer->startElement('ProductData');
 
-		//$builder = "build" . ucfirst($category->config['feedType']);
+		//$builder = "build" . ucfirst($category->config['productDataElement']);
 		$builder = "buildShoes";
 		if (method_exists($this, $builder) && is_callable(array($this, $builder))) {
 			if($isParent) {
@@ -217,6 +217,4 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->endElement();
 		return $writer->outputMemory();
 	}
-
-
 }
