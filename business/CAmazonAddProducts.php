@@ -30,9 +30,14 @@ class CAmazonAddProducts
 	 */
 	protected $app;
 
+	protected $marketplaceWebServiceClient;
+
 	public function __construct(AApplication $app)
 	{
 		$this->app = $app;
+		$this->app->vendorLibraries->load('amazonMWS');
+		$this->marketplaceWebServiceClient = new \MarketplaceWebService_Client("ciccia","MICCIA",["ServiceURL"=>'https://mws.amazonservices.it'],"BlueSeal","1.01");
+
 	}
 
 	/**
@@ -54,26 +59,30 @@ class CAmazonAddProducts
 		}
 
 		$product = new CAmazonProductFeedBuilder($this->app);
-		$this->send($product->prepare($res,true)->getRawBody());
+		$this->prepareAndSend($product->prepare($res,false)->getRawBody());
 
 		$inventary = new CAmazonInventoryFeedBuilder($this->app);
-		$this->send($inventary->prepare($res,true)->getRawBody());
+		$this->prepareAndSend($inventary->prepare($res,true)->getRawBody());
 
 		$pricing = new CAmazonPricingFeedBuilder($this->app);
-		$this->send($pricing->prepare($res,true)->getRawBody());
+		$this->prepareAndSend($pricing->prepare($res,true)->getRawBody());
 
 		$image = new CAmazonImageFeedBuilder($this->app);
-		$this->send($image->prepare($res,true)->getRawBody());
+		$this->prepareAndSend($image->prepare($res,true)->getRawBody());
 
 		$relationship = new CAmazonRelationshipFeedBuilder($this->app);
-		$this->send($relationship->prepare($res,true)->getRawBody());
+		$this->prepareAndSend($relationship->prepare($res,true)->getRawBody());
 
 	}
 
-	public function send($body) {
+	protected function prepareAndSend($content) {
+		return $this->send($this->prepareParameters($content));
+	}
+
+	private function prepareParameters($content) {
 		$x = new \XMLWriter();
 		$x->openMemory();
-		$x->setIndent(true);
+		$x->setIndent(false);
 		$x->startDocument();
 		$x->startElement('AmazonEnvelope');
 		$x->writeAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
@@ -82,9 +91,98 @@ class CAmazonAddProducts
 		$x->writeElement('DocumentVersion','1.01');
 		$x->writeElement('MerchantIdentifier','xxxxxx');
 		$x->endElement();
-		$x->writeRaw($body);
+		$x->writeRaw($content);
 		$x->endElement();
-		echo $x->outputMemory();
+		$x->endDocument();
+		$content = $x->outputMemory();
+		$feedHandle = @fopen('php://temp', 'rw+');
+		fwrite($feedHandle, $content);
+		rewind($feedHandle);
+		$parameters = array (
+			'Merchant' => 'ciccio',
+			'MarketplaceIdList' => ["Id" => [5]],
+			'FeedType' => '_POST_ORDER_FULFILLMENT_DATA_',
+			'FeedContent' => $feedHandle,
+			'PurgeAndReplace' => false,
+			'ContentMd5' => base64_encode(md5(stream_get_contents($feedHandle), true)),
+			'MWSAuthToken' => '<MWS Auth Token>', // Optional
+		);
+		fclose($feedHandle);
+
+		return $parameters;
+	}
+
+	private function send(array $parameters) {
+		$request = new \MarketplaceWebService_Model_SubmitFeedRequest($parameters);
+
+		$service = $this->marketplaceWebServiceClient;
+		try {
+			$response = $service->submitFeed($request);
+
+			echo ("Service Response\n");
+			echo ("=============================================================================\n");
+
+			echo("        SubmitFeedResponse\n");
+			if ($response->isSetSubmitFeedResult()) {
+				echo("            SubmitFeedResult\n");
+				$submitFeedResult = $response->getSubmitFeedResult();
+				if ($submitFeedResult->isSetFeedSubmissionInfo()) {
+					echo("                FeedSubmissionInfo\n");
+					$feedSubmissionInfo = $submitFeedResult->getFeedSubmissionInfo();
+					if ($feedSubmissionInfo->isSetFeedSubmissionId())
+					{
+						echo("                    FeedSubmissionId\n");
+						echo("                        " . $feedSubmissionInfo->getFeedSubmissionId() . "\n");
+					}
+					if ($feedSubmissionInfo->isSetFeedType())
+					{
+						echo("                    FeedType\n");
+						echo("                        " . $feedSubmissionInfo->getFeedType() . "\n");
+					}
+					if ($feedSubmissionInfo->isSetSubmittedDate())
+					{
+						echo("                    SubmittedDate\n");
+						echo("                        " . $feedSubmissionInfo->getSubmittedDate()->format(DATE_FORMAT) . "\n");
+					}
+					if ($feedSubmissionInfo->isSetFeedProcessingStatus())
+					{
+						echo("                    FeedProcessingStatus\n");
+						echo("                        " . $feedSubmissionInfo->getFeedProcessingStatus() . "\n");
+					}
+					if ($feedSubmissionInfo->isSetStartedProcessingDate())
+					{
+						echo("                    StartedProcessingDate\n");
+						echo("                        " . $feedSubmissionInfo->getStartedProcessingDate()->format(DATE_FORMAT) . "\n");
+					}
+					if ($feedSubmissionInfo->isSetCompletedProcessingDate())
+					{
+						echo("                    CompletedProcessingDate\n");
+						echo("                        " . $feedSubmissionInfo->getCompletedProcessingDate()->format(DATE_FORMAT) . "\n");
+					}
+				}
+			}
+			if ($response->isSetResponseMetadata()) {
+				echo("            ResponseMetadata\n");
+				$responseMetadata = $response->getResponseMetadata();
+				if ($responseMetadata->isSetRequestId())
+				{
+					echo("                RequestId\n");
+					echo("                    " . $responseMetadata->getRequestId() . "\n");
+				}
+			}
+
+			echo("            ResponseHeaderMetadata: " . $response->getResponseHeaderMetadata() . "\n");
+		} catch (\MarketplaceWebService_Exception $ex) {
+			echo("Caught Exception: " . $ex->getMessage() . "\n");
+			echo("Response Status Code: " . $ex->getStatusCode() . "\n");
+			echo("Error Code: " . $ex->getErrorCode() . "\n");
+			echo("Error Type: " . $ex->getErrorType() . "\n");
+			echo("Request ID: " . $ex->getRequestId() . "\n");
+			echo("XML: " . $ex->getXML() . "\n");
+			echo("ResponseHeaderMetadata: " . $ex->getResponseHeaderMetadata() . "\n");
+			return false;
+		}
+		return true;
 	}
 
 	public function prepareSkus(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct)
