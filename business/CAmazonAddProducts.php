@@ -76,10 +76,6 @@ class CAmazonAddProducts
 	}
 
 	protected function prepareAndSend($content) {
-		return $this->send($this->prepareParameters($content));
-	}
-
-	private function prepareParameters($content) {
 		$x = new \XMLWriter();
 		$x->openMemory();
 		$x->setIndent(false);
@@ -107,12 +103,7 @@ class CAmazonAddProducts
 			'ContentMd5' => base64_encode(md5(stream_get_contents($feedHandle), true)),
 			'MWSAuthToken' => '<MWS Auth Token>', // Optional
 		);
-		fclose($feedHandle);
-
-		return $parameters;
-	}
-
-	private function send(array $parameters) {
+		rewind($feedHandle);
 		$request = new \MarketplaceWebService_Model_SubmitFeedRequest($parameters);
 
 		$service = $this->marketplaceWebServiceClient;
@@ -180,8 +171,10 @@ class CAmazonAddProducts
 			echo("Request ID: " . $ex->getRequestId() . "\n");
 			echo("XML: " . $ex->getXML() . "\n");
 			echo("ResponseHeaderMetadata: " . $ex->getResponseHeaderMetadata() . "\n");
+			fclose($feedHandle);
 			return false;
 		}
+		fclose($feedHandle);
 		return true;
 	}
 
