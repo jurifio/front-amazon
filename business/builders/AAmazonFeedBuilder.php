@@ -39,12 +39,6 @@ abstract class AAmazonFeedBuilder
 		$this->app = $app;
 	}
 
-	public function call($rawBody = null) {
-		if($rawBody == null) {
-			$rawBody = $this->rawBody;
-		}
-	}
-
 	/**
 	 * @return string
 	 */

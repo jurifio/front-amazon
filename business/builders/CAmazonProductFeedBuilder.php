@@ -162,7 +162,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('SKU',$productSkuSample->printPublicSku());
 		$writer->startElement('StandardProductID');
 		$writer->writeElement('Type','EAN');
-		$writer->writeElement('Value',empty($productSkuSample->barcode) ? '0000000000001' : $productSkuSample->barcode);
+		$writer->writeElement('Value',empty($productSkuSample->ean) ? '0000000000001' : $productSkuSample->barcode);
 		$writer->endElement();
 		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProductSku, $indent));
 		return $writer->outputMemory();
