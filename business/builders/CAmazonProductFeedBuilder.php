@@ -21,6 +21,7 @@ use bamboo\domain\entities\CMarketplaceAccountHasProductSku;
  */
 class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 {
+	protected $feedTypeName = '_POST_PRODUCT_DATA_';
 	/**
 	 * @param CObjectCollection $marketplaceAccountHasProducts
 	 * @param bool $indent
@@ -36,14 +37,14 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{
 			$i++;
-			$writer->startElement('Message');
+			/*$writer->startElement('Message');
 			$writer->writeElement('MessageID',$i);
 			$writer->writeElement('OperationType','Update');
 			$writer->startElement('Product');
 			$writer->writeRaw($this->writeParentProduct($marketplaceAccountHasProduct,$indent));
 			$writer->endElement();
 			$writer->endElement();
-
+*/
 			foreach($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketplaceAccountHasProductSku) {
 				$i++;
 				$writer->startElement('Message');
@@ -132,7 +133,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 	 * @param CMarketplaceAccountHasProduct $marketplaceAccountHasProduct
 	 * @param bool $indent
 	 * @return string
-	 */
+
 	protected function writeParentProduct(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct, $indent = false)
 	{
 		$product = $marketplaceAccountHasProduct->product;
@@ -141,20 +142,19 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$writer->writeElement('SKU',$product->printId());
-		$writer->startElement('StandardProductID');
-		$writer->writeElement('Type','EAN');
-		$writer->writeElement('Value','abracadabra');
-		$writer->endElement();
+		//$writer->startElement('StandardProductID');
+		//$writer->writeElement('Type','EAN');
+		//$writer->writeElement('Value','');
+		//$writer->endElement();
 		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
 
 		return $writer->outputMemory();
-	}
+	}*/
 
 	protected function writeChildProduct(CMarketplaceAccountHasProductSku $marketplaceAccountHasProductSku, $indent = false)
 	{
 		$marketplaceAccountHasProduct = $marketplaceAccountHasProductSku->marketplaceAccountHasProduct;
 		$productSkuSample = $marketplaceAccountHasProductSku->productSku->getFirst();
-		$product = $marketplaceAccountHasProduct->product;
 
 		$writer = new \XMLWriter();
 		$writer->openMemory();
@@ -162,7 +162,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('SKU',$productSkuSample->printPublicSku());
 		$writer->startElement('StandardProductID');
 		$writer->writeElement('Type','EAN');
-		$writer->writeElement('Value',empty($productSkuSample->ean) ? '0000000000001' : $productSkuSample->barcode);
+		$writer->writeElement('Value',$productSkuSample->ean);
 		$writer->endElement();
 		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProductSku, $indent));
 		return $writer->outputMemory();
@@ -188,6 +188,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		if(!$isParent) {
 			$writer->writeElement('Size',$marketplaceProductSku->productSku->getFirst()->productSize->name);
 		}
+		$writer->writeElement('Color',$product->product->productVariant->name);
 		$writer->writeElement('VariationTheme','Size');
 		$writer->endElement();
 		$writer->startElement('ClassificationData');

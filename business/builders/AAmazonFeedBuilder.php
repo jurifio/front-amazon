@@ -27,6 +27,11 @@ abstract class AAmazonFeedBuilder
 	protected $app;
 
 	/**
+	 * @var
+	 */
+	protected $feedTypeName;
+
+	/**
 	 * @var string
 	 */
 	protected $rawBody;
@@ -45,6 +50,10 @@ abstract class AAmazonFeedBuilder
 	public function getRawBody()
 	{
 		return $this->rawBody;
+	}
+
+	public function getFeedTypeName() {
+		return $this->feedTypeName;
 	}
 
 	public abstract function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false);

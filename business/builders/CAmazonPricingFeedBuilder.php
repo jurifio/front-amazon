@@ -5,6 +5,7 @@ namespace bamboo\amazon\business\builders;
 use bamboo\core\application\AApplication;
 use bamboo\core\base\CObjectCollection;
 use bamboo\domain\entities\CProduct;
+use bamboo\domain\entities\CProductSku;
 
 /**
  * Class CAmazonProductFeedBuilder
@@ -21,6 +22,8 @@ use bamboo\domain\entities\CProduct;
  */
 class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 {
+	protected $feedTypeName = '_POST_PRODUCT_PRICING_DATA_';
+
 	/**
 	 * @param CObjectCollection $marketPlaceAccountHasProducts
 	 * @param bool $indent
@@ -31,18 +34,21 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
-		$writer->writeElement('MessageType','Pricing');
+		$writer->writeElement('MessageType','Price');
 		$i = 0;
-		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
+		foreach ($marketPlaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{
-			$i++;
-			$writer->startElement('Message');
-			$writer->writeElement('MessageID',$i);
-			$writer->writeElement('OperationType','Update');
-			$writer->startElement('Price');
-			$writer->writeRaw($this->writePrice($marketPlaceAccountHasProduct->product,$indent));
-			$writer->endElement();
-			$writer->endElement();
+			foreach ($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketPlaceAccountHasProductSku)
+			{
+				$i++;
+				$writer->startElement('Message');
+				$writer->writeElement('MessageID',$i);
+				$writer->writeElement('OperationType','Update');
+				$writer->startElement('Price');
+				$writer->writeRaw($this->writePrice($marketPlaceAccountHasProductSku->productSku->getFirst(),$indent));
+				$writer->endElement();
+				$writer->endElement();
+			}
 		}
 		$this->rawBody = $writer->outputMemory();
 		return $this;
@@ -53,15 +59,15 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 	 * @param $indent
 	 * @return string
 	 */
-	protected function writePrice(CProduct $product, $indent = false) {
+	protected function writePrice(CProductSku $sku, $indent = false) {
 		$writer = new \XMLWriter();
 
 		$writer->openMemory();
 		$writer->setIndent($indent);
-		$writer->writeElement('SKU',$product->printId());
+		$writer->writeElement('SKU',$sku->printPublicSku());
 		$writer->startElement('StandardPrice');
 		$writer->writeAttribute('currency','EUR');
-		$writer->writeRaw((string) number_format($product->getDisplayPrice(),2,'.',''));
+		$writer->writeRaw((string) number_format($sku->price,2,'.',''));
 		$writer->endElement();
 		/**
 		 * TODO insert sale

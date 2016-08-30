@@ -21,7 +21,7 @@ use bamboo\domain\entities\CProduct;
  */
 class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
 {
-
+	protected $feedTypeName = '_POST_PRODUCT_RELATIONSHIP_DATA_';
 	/**
 	 * @param CObjectCollection $marketplaceAccountHasProducts
 	 * @param bool $indent

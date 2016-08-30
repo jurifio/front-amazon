@@ -2,6 +2,7 @@
 
 namespace bamboo\amazon\business;
 
+use bamboo\amazon\business\builders\AAmazonFeedBuilder;
 use bamboo\amazon\business\builders\CAmazonImageFeedBuilder;
 use bamboo\amazon\business\builders\CAmazonInventoryFeedBuilder;
 use bamboo\amazon\business\builders\CAmazonPricingFeedBuilder;
@@ -43,8 +44,8 @@ class CAmazonAddProducts
 	 */
 	public function sendProducts()
 	{
-		$sql = "SELECT 	marketplaceId,
-						marketplaceAccountId as id
+		$sql = "SELECT 	marketplaceAccountId as id,
+						marketplaceId
 				FROM 	MarketplaceAccountHasProduct mahp, 
 						Marketplace m 
 				WHERE 	m.id = mahp.marketplaceId 
@@ -71,19 +72,19 @@ class CAmazonAddProducts
 				}
 
 				$product = new CAmazonProductFeedBuilder($this->app);
-				$this->prepareAndSend($marketplaceAccount,$product->prepare($res,false)->getRawBody());
+				$this->prepareAndSend($marketplaceAccount,$product,$res);
 
 				$inventary = new CAmazonInventoryFeedBuilder($this->app);
-				$this->prepareAndSend($marketplaceAccount,$inventary->prepare($res,true)->getRawBody());
+				$this->prepareAndSend($marketplaceAccount,$inventary,$res);
 
 				$pricing = new CAmazonPricingFeedBuilder($this->app);
-				$this->prepareAndSend($marketplaceAccount,$pricing->prepare($res,true)->getRawBody());
+				$this->prepareAndSend($marketplaceAccount,$pricing,$res);
 
 				$image = new CAmazonImageFeedBuilder($this->app);
-				$this->prepareAndSend($marketplaceAccount,$image->prepare($res,true)->getRawBody());
+				$this->prepareAndSend($marketplaceAccount,$image,$res);
 
 				$relationship = new CAmazonRelationshipFeedBuilder($this->app);
-				$this->prepareAndSend($marketplaceAccount,$relationship->prepare($res,true)->getRawBody());
+				$this->prepareAndSend($marketplaceAccount,$relationship,$res);
 
 			} catch (\Exception $e) {
 				die(var_dump($e));
@@ -91,7 +92,7 @@ class CAmazonAddProducts
 		}
 	}
 
-	protected function prepareAndSend($marketplaceAccount,$content) {
+	protected function prepareAndSend($marketplaceAccount, AAmazonFeedBuilder $builder,$products) {
 
 		$service = new \MarketplaceWebService_Client(
 			$marketplaceAccount->config['awsAccessKeyId'],
@@ -100,13 +101,15 @@ class CAmazonAddProducts
 			"BlueSeal",
 			"1.01");
 
+		$content = $builder->prepare($products,false)->getRawBody();
+
 		$x = new \XMLWriter();
 		$x->openMemory();
 		$x->setIndent(false);
 		$x->startDocument();
 		$x->startElement('AmazonEnvelope');
+		$x->writeAttribute("xsi:noNamespaceSchemaLocation","amzn-envelope.xsd");
 		$x->writeAttribute("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
-		$x->writeAttribute("xsi:noNamespaceSchemaLocation","https://images-na.ssl-images-amazon.com/images/G/01/rainier/help/xsd/release_1_9/amzn-envelope.xsd");
 		$x->startElement('Header');
 		$x->writeElement('DocumentVersion','1.01');
 		$x->writeElement('MerchantIdentifier',$marketplaceAccount->config['merchantIdentifier']);
@@ -115,13 +118,14 @@ class CAmazonAddProducts
 		$x->endElement();
 		$x->endDocument();
 		$content = $x->outputMemory();
+		echo $content;
 		$feedHandle = @fopen('php://temp', 'rw+');
 		fwrite($feedHandle, $content);
 		rewind($feedHandle);
 		$parameters = array (
 			'Merchant' => $marketplaceAccount->config['merchantIdentifier'],
 			'MarketplaceIdList' => ["Id" => $marketplaceAccount->config['marketplaceIdList']],
-			'FeedType' => '_POST_ORDER_FULFILLMENT_DATA_',
+			'FeedType' => $builder->getFeedTypeName(),
 			'FeedContent' => $feedHandle,
 			'PurgeAndReplace' => false,
 			'ContentMd5' => base64_encode(md5(stream_get_contents($feedHandle), true))

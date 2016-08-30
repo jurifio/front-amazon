@@ -23,6 +23,7 @@ use bamboo\domain\entities\CProductSku;
  */
 class CAmazonInventoryFeedBuilder extends AAmazonFeedBuilder
 {
+	protected $feedTypeName = '_POST_INVENTORY_AVAILABILITY_DATA_';
 
 	public function prepare(CObjectCollection $marketplaceAccountHasProducts, $indent = false)
 	{

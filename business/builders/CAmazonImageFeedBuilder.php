@@ -22,6 +22,7 @@ use bamboo\domain\entities\CProductPhoto;
  */
 class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 {
+	protected $feedTypeName = '_POST_PRODUCT_IMAGE_DATA_';
 
 	public function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false)
 	{
