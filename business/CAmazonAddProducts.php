@@ -86,7 +86,7 @@ class CAmazonAddProducts
 				$this->prepareAndSend($marketplaceAccount,$relationship->prepare($res,true)->getRawBody());
 
 			} catch (\Exception $e) {
-
+				die(var_dump($e));
 			}
 		}
 	}
