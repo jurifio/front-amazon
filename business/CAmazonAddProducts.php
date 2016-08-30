@@ -182,6 +182,9 @@ class CAmazonAddProducts
 	{
 		$sizesDone = [];
 		foreach ($marketplaceAccountHasProduct->product->productSku as $sku) {
+			if(empty($sku->ean)) {
+				$this->app->repoFactory->create('ProductSku')->assignNewEan($sku);
+			}
 			$marketSku = $this->app->repoFactory->create('MarketplaceAccountHasProductSku')->getEmptyEntity();
 			$marketSku->productSizeId = $sku->productSizeId;
 			$marketSku->productId = $sku->productId;
