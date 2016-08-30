@@ -37,14 +37,14 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{
 			$i++;
-			/*$writer->startElement('Message');
+			$writer->startElement('Message');
 			$writer->writeElement('MessageID',$i);
 			$writer->writeElement('OperationType','Update');
 			$writer->startElement('Product');
 			$writer->writeRaw($this->writeParentProduct($marketplaceAccountHasProduct,$indent));
 			$writer->endElement();
 			$writer->endElement();
-*/
+
 			foreach($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketplaceAccountHasProductSku) {
 				$i++;
 				$writer->startElement('Message');
@@ -87,7 +87,11 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('Title',$product->getName());
 		$writer->writeElement('Brand',$product->productBrand->name);
 		$writer->writeElement('Description',$product->getDescription());
+		$max = 5;
+		$current = 0;
 		foreach ($product->productSheetActual as $sheetPage) {
+			$current++;
+			if($current>$max) break;
 			try{
 				$writer->writeElement('BulletPoint',$sheetPage->productDetail->productDetailTranslation->getFirst()->name);
 			} catch (\Exception $e){}
@@ -133,7 +137,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 	 * @param CMarketplaceAccountHasProduct $marketplaceAccountHasProduct
 	 * @param bool $indent
 	 * @return string
-
+	 */
 	protected function writeParentProduct(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct, $indent = false)
 	{
 		$product = $marketplaceAccountHasProduct->product;
@@ -149,7 +153,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
 
 		return $writer->outputMemory();
-	}*/
+	}
 
 	protected function writeChildProduct(CMarketplaceAccountHasProductSku $marketplaceAccountHasProductSku, $indent = false)
 	{

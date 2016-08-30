@@ -29,7 +29,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
-		$writer->writeElement('MessageType','Image');
+		$writer->writeElement('MessageType','ProductImage');
 		$amazon = $this->app->cfg()->fetch("general","product-photo-host");
 		$i = 0;
 		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
@@ -41,7 +41,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 				$i++;
 				$writer->startElement('Message');
 				$writer->writeElement('MessageID',$i);
-				$writer->writeElement('OperationType','Insert');
+				$writer->writeElement('OperationType','Update');
 				$writer->startElement('ProductImage');
 				$writer->writeElement('SKU',$marketPlaceAccountHasProduct->product->printId());
 				switch ($productPhoto->order) {
@@ -51,7 +51,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 					default: $type = "PT".$productPhoto->order;
 				}
 				$writer->writeElement('ImageType',$type);
-				$writer->writeElement('ImageLocatio',$path.$productPhoto->name);
+				$writer->writeElement('ImageLocation',$path.$productPhoto->name);
 
 				$writer->endElement();
 				$writer->endElement();
