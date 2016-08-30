@@ -36,8 +36,6 @@ class CAmazonAddProducts
 	{
 		$this->app = $app;
 		$this->app->vendorLibraries->load('amazonMWS');
-		$this->marketplaceWebServiceClient = new \MarketplaceWebService_Client("ciccia","MICCIA",["ServiceURL"=>'https://mws.amazonservices.it'],"BlueSeal","1.01");
-
 	}
 
 	/**
@@ -45,37 +43,63 @@ class CAmazonAddProducts
 	 */
 	public function sendProducts()
 	{
-		$sql = "SELECT 	productId, 
+		$sql = "SELECT 	marketplaceId,
+						marketplaceAccountId as id
+				FROM 	MarketplaceAccountHasProduct mahp, 
+						Marketplace m 
+				WHERE 	m.id = mahp.marketplaceId 
+					AND m.name = 'Amazon' and mahp.isToWork = 1 
+					GROUP BY marketplaceId,
+					marketplaceAccountId";
+
+		$marketplaceAccounts = $this->app->repoFactory->create('MarketplaceAccount')->em()->findBySql($sql, []);
+
+		foreach ($marketplaceAccounts as $marketplaceAccount) {
+			try {
+				$sql = "SELECT 	productId, 
 						productVariantId, 
 						marketplaceId,
 						marketplaceAccountId 
 				FROM 	MarketplaceAccountHasProduct mahp, 
 						Marketplace m 
 				WHERE 	m.id = mahp.marketplaceId 
-					AND m.name = 'Amazon'";
-		$res = $this->app->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, []);
-		foreach ($res as $re) {
-			$this->prepareSkus($re);
+					AND m.name = 'Amazon' and mahp.isToWork = 1 and mahp.marketplaceAccountId = ?";
+				$res = $this->app->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, [$marketplaceAccount->id]);
+
+				foreach ($res as $re) {
+					$this->prepareSkus($re);
+				}
+
+				$product = new CAmazonProductFeedBuilder($this->app);
+				$this->prepareAndSend($marketplaceAccount,$product->prepare($res,false)->getRawBody());
+
+				$inventary = new CAmazonInventoryFeedBuilder($this->app);
+				$this->prepareAndSend($marketplaceAccount,$inventary->prepare($res,true)->getRawBody());
+
+				$pricing = new CAmazonPricingFeedBuilder($this->app);
+				$this->prepareAndSend($marketplaceAccount,$pricing->prepare($res,true)->getRawBody());
+
+				$image = new CAmazonImageFeedBuilder($this->app);
+				$this->prepareAndSend($marketplaceAccount,$image->prepare($res,true)->getRawBody());
+
+				$relationship = new CAmazonRelationshipFeedBuilder($this->app);
+				$this->prepareAndSend($marketplaceAccount,$relationship->prepare($res,true)->getRawBody());
+
+			} catch (\Exception $e) {
+
+			}
 		}
-
-		$product = new CAmazonProductFeedBuilder($this->app);
-		$this->prepareAndSend($product->prepare($res,false)->getRawBody());
-
-		$inventary = new CAmazonInventoryFeedBuilder($this->app);
-		$this->prepareAndSend($inventary->prepare($res,true)->getRawBody());
-
-		$pricing = new CAmazonPricingFeedBuilder($this->app);
-		$this->prepareAndSend($pricing->prepare($res,true)->getRawBody());
-
-		$image = new CAmazonImageFeedBuilder($this->app);
-		$this->prepareAndSend($image->prepare($res,true)->getRawBody());
-
-		$relationship = new CAmazonRelationshipFeedBuilder($this->app);
-		$this->prepareAndSend($relationship->prepare($res,true)->getRawBody());
-
 	}
 
-	protected function prepareAndSend($content) {
+	protected function prepareAndSend($marketplaceAccount,$content) {
+
+		$service = new \MarketplaceWebService_Client(
+			$marketplaceAccount->config['awsAccessKeyId'],
+			$marketplaceAccount->config['awsSecretAccessKey'],
+			["ServiceURL"=>$marketplaceAccount->config['serviceUrl'],],
+			"BlueSeal",
+			"1.01");
+
 		$x = new \XMLWriter();
 		$x->openMemory();
 		$x->setIndent(false);
@@ -85,7 +109,7 @@ class CAmazonAddProducts
 		$x->writeAttribute("xsi:noNamespaceSchemaLocation","https://images-na.ssl-images-amazon.com/images/G/01/rainier/help/xsd/release_1_9/amzn-envelope.xsd");
 		$x->startElement('Header');
 		$x->writeElement('DocumentVersion','1.01');
-		$x->writeElement('MerchantIdentifier','xxxxxx');
+		$x->writeElement('MerchantIdentifier',$marketplaceAccount->config['merchantIdentifier']);
 		$x->endElement();
 		$x->writeRaw($content);
 		$x->endElement();
@@ -95,18 +119,19 @@ class CAmazonAddProducts
 		fwrite($feedHandle, $content);
 		rewind($feedHandle);
 		$parameters = array (
-			'Merchant' => 'ciccio',
-			'MarketplaceIdList' => ["Id" => [5]],
+			'Merchant' => $marketplaceAccount->config['merchantIdentifier'],
+			'MarketplaceIdList' => ["Id" => $marketplaceAccount->config['marketplaceIdList']],
 			'FeedType' => '_POST_ORDER_FULFILLMENT_DATA_',
 			'FeedContent' => $feedHandle,
 			'PurgeAndReplace' => false,
-			'ContentMd5' => base64_encode(md5(stream_get_contents($feedHandle), true)),
-			'MWSAuthToken' => '<MWS Auth Token>', // Optional
+			'ContentMd5' => base64_encode(md5(stream_get_contents($feedHandle), true))
 		);
+		if(isset($marketplaceAccount->config['MWSAuthToken']) && !empty($marketplaceAccount->config['MWSAuthToken'])){
+			$parameters['MWSAuthToken'] = $marketplaceAccount->config['MWSAuthToken']; // Optional]
+		}
 		rewind($feedHandle);
 		$request = new \MarketplaceWebService_Model_SubmitFeedRequest($parameters);
 
-		$service = $this->marketplaceWebServiceClient;
 		try {
 			$response = $service->submitFeed($request);
 
