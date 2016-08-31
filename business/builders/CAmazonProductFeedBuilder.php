@@ -146,10 +146,6 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$writer->writeElement('SKU',$product->printId());
-		//$writer->startElement('StandardProductID');
-		//$writer->writeElement('Type','EAN');
-		//$writer->writeElement('Value','');
-		//$writer->endElement();
 		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
 
 		return $writer->outputMemory();
@@ -196,6 +192,10 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('VariationTheme','Size');
 		$writer->endElement();
 		$writer->startElement('ClassificationData');
+		if(!$isParent) {
+			$writer->writeElement('SizeMap',$product->productSku->getFirst()->getStandardSize());
+		}
+
 		$writer->endElement();
 		$writer->endElement();
 		return $writer->outputMemory();

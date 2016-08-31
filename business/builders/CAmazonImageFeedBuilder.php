@@ -34,7 +34,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 		$i = 0;
 		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
 		{
-			$path = $amazon.$marketPlaceAccountHasProduct->product->productBrand->name.'/';
+			$path = $amazon.$marketPlaceAccountHasProduct->product->productBrand->slug.'/';
 			foreach ($marketPlaceAccountHasProduct->product->productPhoto as $productPhoto) {
 				/** @var $productPhoto CProductPhoto */
 				if(!$productPhoto->isBig()) continue;
@@ -55,6 +55,19 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 
 				$writer->endElement();
 				$writer->endElement();
+
+				foreach ($marketPlaceAccountHasProduct->marketplaceAccountHasProductSku as $mahps) {
+					$i++;
+					$writer->startElement('Message');
+					$writer->writeElement('MessageID',$i);
+					$writer->writeElement('OperationType','Update');
+					$writer->startElement('ProductImage');
+					$writer->writeElement('SKU',$mahps->productSku->getFirst()->printPublicSku());
+					$writer->writeElement('ImageType',$type);
+					$writer->writeElement('ImageLocation',$path.$productPhoto->name);
+					$writer->endElement();
+					$writer->endElement();
+				}
 			}
 		}
 		$this->rawBody = $writer->outputMemory();
