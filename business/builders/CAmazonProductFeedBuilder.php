@@ -91,7 +91,7 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$current = 0;
 		foreach ($product->productSheetActual as $sheetPage) {
 			$current++;
-			if($current>$max) break;
+			if($current > $max) break;
 			try{
 				$writer->writeElement('BulletPoint',$sheetPage->productDetail->productDetailTranslation->getFirst()->name);
 			} catch (\Exception $e){}

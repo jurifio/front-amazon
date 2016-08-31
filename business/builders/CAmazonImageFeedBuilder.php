@@ -56,7 +56,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 				$writer->endElement();
 				$writer->endElement();
 
-				foreach ($marketPlaceAccountHasProduct->marketplaceAccountHasProductSku as $mahps) {
+				/*foreach ($marketPlaceAccountHasProduct->marketplaceAccountHasProductSku as $mahps) {
 					$i++;
 					$writer->startElement('Message');
 					$writer->writeElement('MessageID',$i);
@@ -67,7 +67,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 					$writer->writeElement('ImageLocation',$path.$productPhoto->name);
 					$writer->endElement();
 					$writer->endElement();
-				}
+				}*/
 			}
 		}
 		$this->rawBody = $writer->outputMemory();
