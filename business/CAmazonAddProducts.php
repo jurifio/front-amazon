@@ -71,20 +71,20 @@ class CAmazonAddProducts
 					$this->prepareSkus($re);
 				}
 
-				//$product = new CAmazonProductFeedBuilder($this->app);
-				//$this->prepareAndSend($marketplaceAccount,$product,$res);
+				$product = new CAmazonProductFeedBuilder($this->app);
+				$this->prepareAndSend($marketplaceAccount,$product,$res);
 
-				//$inventary = new CAmazonInventoryFeedBuilder($this->app);
-				//$this->prepareAndSend($marketplaceAccount,$inventary,$res);
+				$inventary = new CAmazonInventoryFeedBuilder($this->app);
+				$this->prepareAndSend($marketplaceAccount,$inventary,$res);
 
-				//$pricing = new CAmazonPricingFeedBuilder($this->app);
-				//$this->prepareAndSend($marketplaceAccount,$pricing,$res);
+				$pricing = new CAmazonPricingFeedBuilder($this->app);
+				$this->prepareAndSend($marketplaceAccount,$pricing,$res);
 
 				$image = new CAmazonImageFeedBuilder($this->app);
 				$this->prepareAndSend($marketplaceAccount,$image,$res);
 
-				//$relationship = new CAmazonRelationshipFeedBuilder($this->app);
-				//$this->prepareAndSend($marketplaceAccount,$relationship,$res);
+				$relationship = new CAmazonRelationshipFeedBuilder($this->app);
+				$this->prepareAndSend($marketplaceAccount,$relationship,$res);
 
 			} catch (\Exception $e) {
 				die(var_dump($e));

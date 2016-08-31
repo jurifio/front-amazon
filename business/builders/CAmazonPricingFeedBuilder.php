@@ -55,7 +55,7 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 	}
 
 	/**
-	 * @param CProduct $product
+	 * @param CProductSku $product
 	 * @param $indent
 	 * @return string
 	 */
@@ -67,7 +67,7 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('SKU',$sku->printPublicSku());
 		$writer->startElement('StandardPrice');
 		$writer->writeAttribute('currency','EUR');
-		$writer->writeRaw((string) number_format($sku->price,2,'.',''));
+		$writer->writeRaw((string) $sku->getPrice());
 		$writer->endElement();
 		/**
 		 * TODO insert sale
