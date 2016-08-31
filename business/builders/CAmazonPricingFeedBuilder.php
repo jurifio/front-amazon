@@ -54,11 +54,11 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 		return $this;
 	}
 
-	/**
-	 * @param CProductSku $product
-	 * @param $indent
-	 * @return string
-	 */
+    /**
+     * @param CProductSku $sku
+     * @param bool $indent
+     * @return string
+     */
 	protected function writePrice(CProductSku $sku, $indent = false) {
 		$writer = new \XMLWriter();
 

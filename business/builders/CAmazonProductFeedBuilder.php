@@ -193,7 +193,12 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 		$writer->endElement();
 		$writer->startElement('ClassificationData');
 		if(!$isParent) {
-			$writer->writeElement('SizeMap',$product->productSku->getFirst()->getStandardSize());
+		    $productSize = $this->app->repoFactory->create('ProductSku')->getStandardSizeFor($marketplaceProductSku->productSku->getFirst());
+            if(!is_null($productSize)) {
+                $writer->writeElement('SizeMap',$productSize->name);
+            } else {
+                $writer->writeElement('SizeMap',$marketplaceProductSku->productSku->getFirst()->productSize->name);
+            }
 		}
 
 		$writer->endElement();

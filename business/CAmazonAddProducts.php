@@ -80,13 +80,13 @@ class CAmazonAddProducts
 				$pricing = new CAmazonPricingFeedBuilder($this->app);
 				$this->prepareAndSend($marketplaceAccount,$pricing,$res);
 
-				$image = new CAmazonImageFeedBuilder($this->app);
-				$this->prepareAndSend($marketplaceAccount,$image,$res);
-
 				$relationship = new CAmazonRelationshipFeedBuilder($this->app);
 				$this->prepareAndSend($marketplaceAccount,$relationship,$res);
 
-			} catch (\Exception $e) {
+                $image = new CAmazonImageFeedBuilder($this->app);
+                $this->prepareAndSend($marketplaceAccount,$image,$res);
+
+            } catch (\Exception $e) {
 				die(var_dump($e));
 			}
 		}
