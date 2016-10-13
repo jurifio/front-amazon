@@ -86,7 +86,7 @@ class CAmazonAddProducts
                 $image = new CAmazonImageFeedBuilder($this->app);
                 $this->prepareAndSend($marketplaceAccount,$image,$res);
 
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
 				die(var_dump($e));
 			}
 		}
