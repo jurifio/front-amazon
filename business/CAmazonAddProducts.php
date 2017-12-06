@@ -53,7 +53,7 @@ class CAmazonAddProducts
 					GROUP BY marketplaceId,
 					marketplaceAccountId";
 
-		$marketplaceAccounts = $this->app->repoFactory->create('MarketplaceAccount')->em()->findBySql($sql, []);
+		$marketplaceAccounts = \Monkey::app()->repoFactory->create('MarketplaceAccount')->em()->findBySql($sql, []);
 
 		foreach ($marketplaceAccounts as $marketplaceAccount) {
 			try {
@@ -65,7 +65,7 @@ class CAmazonAddProducts
 						Marketplace m 
 				WHERE 	m.id = mahp.marketplaceId 
 					AND m.name = 'Amazon' and mahp.isToWork = 1 and mahp.marketplaceAccountId = ?";
-				$res = $this->app->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, [$marketplaceAccount->id]);
+				$res = \Monkey::app()->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, [$marketplaceAccount->id]);
 
 				foreach ($res as $re) {
 					$this->prepareSkus($re);
@@ -212,9 +212,9 @@ class CAmazonAddProducts
 		$sizesDone = [];
 		foreach ($marketplaceAccountHasProduct->product->productSku as $sku) {
 			if(empty($sku->ean)) {
-				$this->app->repoFactory->create('ProductSku')->assignNewEan($sku);
+				\Monkey::app()->repoFactory->create('ProductSku')->assignNewEan($sku);
 			}
-			$marketSku = $this->app->repoFactory->create('MarketplaceAccountHasProductSku')->getEmptyEntity();
+			$marketSku = \Monkey::app()->repoFactory->create('MarketplaceAccountHasProductSku')->getEmptyEntity();
 			$marketSku->productSizeId = $sku->productSizeId;
 			$marketSku->productId = $sku->productId;
 			$marketSku->productVariantId = $sku->productVariantId;
