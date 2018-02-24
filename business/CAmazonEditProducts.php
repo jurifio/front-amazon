@@ -24,7 +24,7 @@ use bamboo\domain\entities\CMarketplaceAccountHasProduct;
  * @date 02/08/2016
  * @since 1.0
  */
-class CAmazonAddProducts
+class CAmazonEditProducts
 {
 	/**
 	 * @var AApplication
@@ -49,7 +49,7 @@ class CAmazonAddProducts
 				FROM 	MarketplaceAccountHasProduct mahp, 
 						Marketplace m 
 				WHERE 	m.id = mahp.marketplaceId 
-					AND m.name = 'Amazon' and mahp.isToWork = 1
+					AND m.name = 'Amazon' and mahp.isToWork = 1 and mahp.isRevised = 0
 					GROUP BY marketplaceId,
 					marketplaceAccountId";
 
@@ -64,27 +64,14 @@ class CAmazonAddProducts
 				FROM 	MarketplaceAccountHasProduct mahp, 
 						Marketplace m 
 				WHERE 	m.id = mahp.marketplaceId 
-					AND m.name = 'Amazon' and mahp.isToWork = 1 and mahp.marketplaceAccountId = ?";
+					AND m.name = 'Amazon' and mahp.isToWork = 1 and mahp.isRevised = 0 and mahp.marketplaceAccountId = ?";
 				$res = \Monkey::app()->repoFactory->create('MarketplaceAccountHasProduct')->em()->findBySql($sql, [$marketplaceAccount->id]);
-
-				foreach ($res as $re) {
-					$this->prepareSkus($re);
-				}
-
-				$product = new CAmazonProductFeedBuilder($this->app);
-				$this->prepareAndSend($marketplaceAccount,$product,$res);
 
 				$inventary = new CAmazonInventoryFeedBuilder($this->app);
 				$this->prepareAndSend($marketplaceAccount,$inventary,$res);
 
 				$pricing = new CAmazonPricingFeedBuilder($this->app);
 				$this->prepareAndSend($marketplaceAccount,$pricing,$res);
-
-				$relationship = new CAmazonRelationshipFeedBuilder($this->app);
-				$this->prepareAndSend($marketplaceAccount,$relationship,$res);
-
-                $image = new CAmazonImageFeedBuilder($this->app);
-                $this->prepareAndSend($marketplaceAccount,$image,$res);
 
             } catch (\Throwable $e) {
 				die(var_dump($e));
