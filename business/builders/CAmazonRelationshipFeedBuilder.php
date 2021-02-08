@@ -33,6 +33,8 @@ class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$writer->writeElement('MessageType','Relationship');
+        $writer->writeElement('PurgeAndReplace','true');
+        $i = 0;
 		$i = 0;
 		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{
@@ -41,10 +43,10 @@ class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
 			$writer->writeElement('MessageID',$i);
 			$writer->writeElement('OperationType','Update');
 			$writer->startElement('Relationship');
-			$writer->writeElement('ParentSKU',$marketplaceAccountHasProduct->product->printId());
+			$writer->writeElement('ParentSKU',$marketplaceAccountHasProduct->productId.'-'.$marketplaceAccountHasProduct->productVariantId);
 			foreach ($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketplaceAccountHasProductSku) {
 				$writer->startElement('Relation');
-				$writer->writeElement('SKU',$marketplaceAccountHasProductSku->productSku->getFirst()->printPublicSku());
+				$writer->writeElement('SKU',$marketplaceAccountHasProductSku->productId.'-'.$marketplaceAccountHasProductSku->productVariantId.'-'.$marketplaceAccountHasProductSku->productSizeId);
 				$writer->writeElement('Type','Variation');
 				$writer->endElement();
 			}

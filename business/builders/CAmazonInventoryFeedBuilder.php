@@ -58,7 +58,7 @@ class CAmazonInventoryFeedBuilder extends AAmazonFeedBuilder
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
-		$writer->writeElement('SKU',$sku->productSku->getFirst()->printPublicSku());
+		$writer->writeElement('SKU',$sku->productId.'-'.$sku->productVariantId.'-'.$sku->productSizeId);
 		$writer->writeElement('FulfillmentCenterID','DEFAULT');
 		$qty = 0;
 		foreach ($sku->productSku as $productSku) {

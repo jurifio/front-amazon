@@ -35,6 +35,7 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$writer->writeElement('MessageType','Price');
+        $i = 0;
 		$i = 0;
 		foreach ($marketPlaceAccountHasProducts as $marketplaceAccountHasProduct)
 		{
@@ -64,7 +65,7 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 
 		$writer->openMemory();
 		$writer->setIndent($indent);
-		$writer->writeElement('SKU',$sku->printPublicSku());
+		$writer->writeElement('SKU',$sku->productId.'-'.$sku->productVariantId.'-'.$sku->productSizeId);
 		$writer->startElement('StandardPrice');
 		$writer->writeAttribute('currency','EUR');
 		$writer->writeRaw((string) $sku->getPrice());

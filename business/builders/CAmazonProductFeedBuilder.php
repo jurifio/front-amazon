@@ -21,210 +21,212 @@ use bamboo\domain\entities\CMarketplaceAccountHasProductSku;
  */
 class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 {
-	protected $feedTypeName = '_POST_PRODUCT_DATA_';
-	/**
-	 * @param CObjectCollection $marketplaceAccountHasProducts
-	 * @param bool $indent
-	 * @return $this
-	 */
-	public function prepare(CObjectCollection $marketplaceAccountHasProducts, $indent = false)
-	{
-		$writer = new \XMLWriter();
-		$writer->openMemory();
-		$writer->setIndent($indent);
-		$writer->writeElement('MessageType','Product');
-		$i = 0;
-		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
-		{
-			$i++;
-			$writer->startElement('Message');
-			$writer->writeElement('MessageID',$i);
-			$writer->writeElement('OperationType','Update');
-			$writer->startElement('Product');
-			$writer->writeRaw($this->writeParentProduct($marketplaceAccountHasProduct,$indent));
-			$writer->endElement();
-			$writer->endElement();
+    protected $feedTypeName = '_POST_PRODUCT_DATA_';
+    /**
+     * @param CObjectCollection $marketplaceAccountHasProducts
+     * @param bool $indent
+     * @return $this
+     */
+    public function prepare(CObjectCollection $marketplaceAccountHasProducts, $indent = false)
+    {
+        $writer = new \XMLWriter();
+        $writer->openMemory();
+        $writer->setIndent($indent);
+        $writer->writeElement('MessageType','Product');
+        $writer->writeElement('PurgeAndReplace','true');
+        $i = 0;
+        foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
+        {
+            $i++;
+            $writer->startElement('Message');
+            $writer->writeElement('MessageID',$i);
+            $writer->writeElement('OperationType','Update');
+            $writer->startElement('Product');
+            $writer->writeRaw($this->writeParentProduct($marketplaceAccountHasProduct,$indent));
+            $writer->endElement();
+            $writer->endElement();
 
-			foreach($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketplaceAccountHasProductSku) {
-				$i++;
-				$writer->startElement('Message');
-				$writer->writeElement('MessageID',$i);
-				$writer->writeElement('OperationType','Update');
-				$writer->startElement('Product');
-				$writer->writeRaw($this->writeChildProduct($marketplaceAccountHasProductSku,$indent));
-				$writer->endElement();
-				$writer->endElement();
+            foreach($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketplaceAccountHasProductSku) {
+                $i++;
+                $writer->startElement('Message');
+                $writer->writeElement('MessageID',$i);
+                $writer->writeElement('OperationType','Update');
+                $writer->startElement('Product');
+                $writer->writeRaw($this->writeChildProduct($marketplaceAccountHasProductSku,$indent));
+                $writer->endElement();
+                $writer->endElement();
 
-			}
-		}
-		$this->rawBody = $writer->outputMemory();
-		return $this;
-	}
+            }
+        }
+        $this->rawBody = $writer->outputMemory();
+        return $this;
+    }
 
-	protected function writeProductData($productIncoming, $indent = false)
-	{
-		if($productIncoming instanceof CMarketplaceAccountHasProduct) {
-			$marketplaceAccountHasProduct = $productIncoming;
-			$isParent = true;
-		} elseif($productIncoming instanceof CMarketplaceAccountHasProductSku) {
-			$isParent = false;
-			$marketplaceAccountHasProduct = $productIncoming->marketplaceAccountHasProduct;
-		} else throw new \Exception('olè');
+    protected function writeProductData($productIncoming, $indent = false)
+    {
+        if($productIncoming instanceof CMarketplaceAccountHasProduct) {
+            $marketplaceAccountHasProduct = $productIncoming;
+            $isParent = true;
+        } elseif($productIncoming instanceof CMarketplaceAccountHasProductSku) {
+            $isParent = false;
+            $marketplaceAccountHasProduct = $productIncoming->marketplaceAccountHasProduct;
+        } else throw new \Exception('olè');
 
-		$product = $marketplaceAccountHasProduct->product;
+        $product = $marketplaceAccountHasProduct->product;
 
-		$writer = new \XMLWriter();
-		$writer->openMemory();
-		$writer->setIndent($indent);
+        $writer = new \XMLWriter();
+        $writer->openMemory();
+        $writer->setIndent($indent);
 
-		$writer->writeElement('ProductTaxCode','A_GEN_TAX');
-		$writer->writeElement('LaunchDate',(new \DateTime())->format(DATE_ATOM));
-		$writer->writeElement('ReleaseDate',(new \DateTime())->format(DATE_ATOM));
-		$writer->startElement('Condition');
-		$writer->writeElement('ConditionType','New');
-		$writer->endElement();
-		$writer->startElement('DescriptionData');
-		$writer->writeElement('Title',$product->getName());
-		$writer->writeElement('Brand',$product->productBrand->name);
-		$writer->writeElement('Description',$product->getDescription());
-		$max = 5;
-		$current = 0;
-		foreach ($product->productSheetActual as $sheetPage) {
-			$current++;
-			if($current > $max) break;
-			try{
-				$writer->writeElement('BulletPoint',$sheetPage->productDetail->productDetailTranslation->getFirst()->name);
-			} catch (\Throwable $e){}
+        $writer->writeElement('ProductTaxCode','A_GEN_TAX');
+        $writer->writeElement('LaunchDate',(new \DateTime())->format(DATE_ATOM));
+        $writer->writeElement('ReleaseDate',(new \DateTime())->format(DATE_ATOM));
+        $writer->startElement('Condition');
+        $writer->writeElement('ConditionType','New');
+        $writer->endElement();
+        $writer->startElement('DescriptionData');
+        $writer->writeElement('Title',$product->getName());
+        $writer->writeElement('Brand',$product->productBrand->name);
+        $writer->writeElement('Description',$product->getDescription());
+        $max = 5;
+        $current = 0;
+        foreach ($product->productSheetActual as $sheetPage) {
+            $current++;
+            if($current > $max) break;
+            try{
+                $writer->writeElement('BulletPoint',$sheetPage->productDetail->productDetailTranslation->getFirst()->name);
+            } catch (\Throwable $e){}
 
-		}
-		$writer->writeElement('Manufacturer',$product->productBrand->name);
-		$writer->writeElement('MfrPartNumber',$product->itemno);
+        }
+        $writer->writeElement('Manufacturer',$product->productBrand->name);
+        $writer->writeElement('MfrPartNumber',$product->itemno);
 
-		$writer->writeElement('SearchTerms',$product->productBrand->name);
-		$writer->writeElement('SearchTerms',$product->itemno);
-		$writer->writeElement('ItemType',$product->productCategory->getFirst()->getLocalizedName());
-		$writer->writeElement('IsGiftWrapAvailable','true');
-		$writer->writeElement('IsGiftMessageAvailable','true');
-		$writer->endElement();
-		$writer->endElement();
-		$mCategoryIds = [];
-		foreach ($product->productCategory as $category ) {
-			foreach ($category->marketplaceAccountCategory->findByKeys(['marketplaceId'=>$marketplaceAccountHasProduct->marketplaceId,'marketplaceAccountId'=>$marketplaceAccountHasProduct->marketplaceAccountId,'isRelevant'=>1]) as $mCategory) {
-				$mCategoryIds[] = $mCategory;
-			}
-		}
-		//$category = $mCategoryIds[0];
-		//$writer->writeElement('RecommendedBrowseNode',$category->marketplaceCategoryId);
-		$writer->startElement('ProductData');
+        $writer->writeElement('SearchTerms',$product->productBrand->name);
+        $writer->writeElement('SearchTerms',$product->itemno);
+        $writer->writeElement('ItemType',$product->productCategory->getFirst()->getLocalizedName());
+        $writer->writeElement('IsGiftWrapAvailable','true');
+        $writer->writeElement('IsGiftMessageAvailable','true');
 
-		//$builder = "build" . ucfirst($category->config['productDataElement']);
-		$builder = "buildShoes";
-		if (method_exists($this, $builder) && is_callable(array($this, $builder))) {
-			if($isParent) {
-				$writer->writeRaw($this->$builder($marketplaceAccountHasProduct,$indent));
-			} else {
-				$writer->writeRaw($this->$builder($productIncoming,$indent));
-			}
+        $mCategoryIds = [];
+        foreach ($product->productCategory as $category ) {
+            foreach ($category->marketplaceAccountCategory->findByKeys(['marketplaceId'=>$marketplaceAccountHasProduct->marketplaceId,'marketplaceAccountId'=>$marketplaceAccountHasProduct->marketplaceAccountId,'isRelevant'=>1]) as $mCategory) {
+                $mCategoryIds[] = $mCategory;
+            }
+        }
+        $category = $mCategoryIds[0];
+        $writer->writeElement('RecommendedBrowseNode',$category->marketplaceCategoryId);
+        $writer->endElement();
+        $writer->endElement();
+        $writer->startElement('ProductData');
 
-		} else {
+        //$builder = "build" . ucfirst($category->config['productDataElement']);
+        $builder = "buildShoes";
+        if (method_exists($this, $builder) && is_callable(array($this, $builder))) {
+            if($isParent) {
+                $writer->writeRaw($this->$builder($marketplaceAccountHasProduct,$indent));
+            } else {
+                $writer->writeRaw($this->$builder($productIncoming,$indent));
+            }
 
-		}
-		$writer->endElement();
-		return $writer->outputMemory();
-	}
+        } else {
 
-	/**
-	 * @param CMarketplaceAccountHasProduct $marketplaceAccountHasProduct
-	 * @param bool $indent
-	 * @return string
-	 */
-	protected function writeParentProduct(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct, $indent = false)
-	{
-		$product = $marketplaceAccountHasProduct->product;
+        }
+        $writer->endElement();
+        return $writer->outputMemory();
+    }
 
-		$writer = new \XMLWriter();
-		$writer->openMemory();
-		$writer->setIndent($indent);
-		$writer->writeElement('SKU',$product->printId());
-		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
+    /**
+     * @param CMarketplaceAccountHasProduct $marketplaceAccountHasProduct
+     * @param bool $indent
+     * @return string
+     */
+    protected function writeParentProduct(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct, $indent = false)
+    {
+        $product = $marketplaceAccountHasProduct->product;
 
-		return $writer->outputMemory();
-	}
+        $writer = new \XMLWriter();
+        $writer->openMemory();
+        $writer->setIndent($indent);
+        $writer->writeElement('SKU',$product->printId());
+        $writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
 
-	protected function writeChildProduct(CMarketplaceAccountHasProductSku $marketplaceAccountHasProductSku, $indent = false)
-	{
-		$marketplaceAccountHasProduct = $marketplaceAccountHasProductSku->marketplaceAccountHasProduct;
-		$productSkuSample = $marketplaceAccountHasProductSku->productSku->getFirst();
+        return $writer->outputMemory();
+    }
 
-		$writer = new \XMLWriter();
-		$writer->openMemory();
-		$writer->setIndent($indent);
-		$writer->writeElement('SKU',$productSkuSample->printPublicSku());
-		$writer->startElement('StandardProductID');
-		$writer->writeElement('Type','EAN');
-		$writer->writeElement('Value',$productSkuSample->ean);
-		$writer->endElement();
-		$writer->writeRaw($this->writeProductData($marketplaceAccountHasProductSku, $indent));
-		return $writer->outputMemory();
-	}
+    protected function writeChildProduct(CMarketplaceAccountHasProductSku $marketplaceAccountHasProductSku, $indent = false)
+    {
+        $marketplaceAccountHasProduct = $marketplaceAccountHasProductSku->marketplaceAccountHasProduct;
+        $productSkuSample = $marketplaceAccountHasProductSku->productSku->getFirst();
 
-	protected function buildShoes($product, $indent = false)
-	{
-		if($product instanceof CMarketplaceAccountHasProduct) {
-			$isParent = true;
-		} elseif($product instanceof CMarketplaceAccountHasProductSku) {
-			$isParent = false;
-			$marketplaceProductSku = $product;
-			$product = $marketplaceProductSku->marketplaceAccountHasProduct;
-		} else throw new \Exception('olè');
-		$writer = new \XMLWriter();
-		$writer->openMemory();
-		$writer->setIndent($indent);
-		$writer->startElement('Shoes');
-		$writer->writeElement('ClothingType','Shoes');
+        $writer = new \XMLWriter();
+        $writer->openMemory();
+        $writer->setIndent($indent);
+        $writer->writeElement('SKU',$productSkuSample->printPublicSku());
+        $writer->startElement('StandardProductID');
+        $writer->writeElement('Type','EAN');
+        $writer->writeElement('Value',$productSkuSample->ean);
+        $writer->endElement();
+        $writer->writeRaw($this->writeProductData($marketplaceAccountHasProductSku, $indent));
+        return $writer->outputMemory();
+    }
 
-		$writer->startElement('VariationData');
-		$writer->writeElement('Parentage',$isParent ? 'parent' : 'child');
-		if(!$isParent) {
-			$writer->writeElement('Size',$marketplaceProductSku->productSku->getFirst()->productSize->name);
-		}
-		$writer->writeElement('Color',$product->product->productVariant->name);
-		$writer->writeElement('VariationTheme','Size');
-		$writer->endElement();
-		$writer->startElement('ClassificationData');
-		if(!$isParent) {
-		    $productSize = \Monkey::app()->repoFactory->create('ProductSku')->getStandardSizeFor($marketplaceProductSku->productSku->getFirst());
+    protected function buildShoes($product, $indent = false)
+    {
+        if($product instanceof CMarketplaceAccountHasProduct) {
+            $isParent = true;
+        } elseif($product instanceof CMarketplaceAccountHasProductSku) {
+            $isParent = false;
+            $marketplaceProductSku = $product;
+            $product = $marketplaceProductSku->marketplaceAccountHasProduct;
+        } else throw new \Exception('olè');
+        $writer = new \XMLWriter();
+        $writer->openMemory();
+        $writer->setIndent($indent);
+        $writer->startElement('Shoes');
+        $writer->writeElement('ClothingType','Shoes');
+
+        $writer->startElement('VariationData');
+        $writer->writeElement('Parentage',$isParent ? 'parent' : 'child');
+        if(!$isParent) {
+            $writer->writeElement('Size',$marketplaceProductSku->productSku->getFirst()->productSize->name);
+        }
+        $writer->writeElement('Color',$product->product->productVariant->name);
+        $writer->writeElement('VariationTheme','Size');
+        $writer->endElement();
+        $writer->startElement('ClassificationData');
+        if(!$isParent) {
+            $productSize = \Monkey::app()->repoFactory->create('ProductSku')->getStandardSizeFor($marketplaceProductSku->productSku->getFirst());
             if(!is_null($productSize)) {
                 $writer->writeElement('SizeMap',$productSize->name);
             } else {
                 $writer->writeElement('SizeMap',$marketplaceProductSku->productSku->getFirst()->productSize->name);
             }
-		}
+        }
 
-		$writer->endElement();
-		$writer->endElement();
-		return $writer->outputMemory();
-	}
+        $writer->endElement();
+        $writer->endElement();
+        return $writer->outputMemory();
+    }
 
-	protected function buildClothingAccessories($product, $indent = false)
-	{
-		if($product instanceof CMarketplaceAccountHasProduct) {
-			$isParent = true;
-		} elseif($product instanceof CMarketplaceAccountHasProductSku) {
-			$isParent = false;
-			$marketplaceProductSku = $product;
-			$product = $marketplaceProductSku->marketplaceAccountHasProduct;
-		} else throw new \Exception('olè');
+    protected function buildClothingAccessories($product, $indent = false)
+    {
+        if($product instanceof CMarketplaceAccountHasProduct) {
+            $isParent = true;
+        } elseif($product instanceof CMarketplaceAccountHasProductSku) {
+            $isParent = false;
+            $marketplaceProductSku = $product;
+            $product = $marketplaceProductSku->marketplaceAccountHasProduct;
+        } else throw new \Exception('olè');
 
-		$writer = new \XMLWriter();
-		$writer->openMemory();
-		$writer->setIndent($indent);
-		$writer->startElement('Home');
-		$writer->writeElement('Parentage',$isParent ? 'parent' : 'child');
-		$writer->startElement('VariationData');
-		$writer->writeElement('VariationTheme','Size');
-		$writer->endElement();
-		$writer->endElement();
-		return $writer->outputMemory();
-	}
+        $writer = new \XMLWriter();
+        $writer->openMemory();
+        $writer->setIndent($indent);
+        $writer->startElement('Home');
+        $writer->writeElement('Parentage',$isParent ? 'parent' : 'child');
+        $writer->startElement('VariationData');
+        $writer->writeElement('VariationTheme','Size');
+        $writer->endElement();
+        $writer->endElement();
+        return $writer->outputMemory();
+    }
 }

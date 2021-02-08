@@ -43,7 +43,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 				$writer->writeElement('MessageID',$i);
 				$writer->writeElement('OperationType','Update');
 				$writer->startElement('ProductImage');
-				$writer->writeElement('SKU',$marketPlaceAccountHasProduct->product->printId());
+				$writer->writeElement('SKU',$marketPlaceAccountHasProduct->productId.'-'.$marketPlaceAccountHasProduct->productVariantId);
 				switch ($productPhoto->order) {
 					case '1':
 						$type = "Main";
