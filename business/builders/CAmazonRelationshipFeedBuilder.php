@@ -4,6 +4,7 @@ namespace bamboo\amazon\business\builders;
 
 use bamboo\core\application\AApplication;
 use bamboo\core\base\CObjectCollection;
+use bamboo\domain\entities\CMarketplaceAccount;
 use bamboo\domain\entities\CProduct;
 
 /**
@@ -23,11 +24,12 @@ class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
 {
 	protected $feedTypeName = '_POST_PRODUCT_RELATIONSHIP_DATA_';
 	/**
-	 * @param CObjectCollection $marketplaceAccountHasProducts
-	 * @param bool $indent
-	 * @return $this
-	 */
-	public function prepare(CObjectCollection $marketplaceAccountHasProducts, $indent = false)
+	 *  @param CObjectCollection $prestashopHasProductHasMarketplaceHasShops
+     * @param CMarketplaceAccount $marketplaceAccount
+     * @param bool $indent
+     * @return $this
+     */
+    public function prepare(CMarketplaceAccount $marketplaceAccount, CObjectCollection $prestashopHasProductHasMarketplaceHasShops, $indent = false)
 	{
 		$writer = new \XMLWriter();
 		$writer->openMemory();
@@ -36,15 +38,16 @@ class CAmazonRelationshipFeedBuilder extends AAmazonFeedBuilder
         $writer->writeElement('PurgeAndReplace','true');
         $i = 0;
 		$i = 0;
-		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
+        foreach ($prestashopHasProductHasMarketplaceHasShops as $prestashopHasProductHasMarketplaceHasShop)
 		{
 			$i++;
 			$writer->startElement('Message');
 			$writer->writeElement('MessageID',$i);
 			$writer->writeElement('OperationType','Update');
 			$writer->startElement('Relationship');
-			$writer->writeElement('ParentSKU',$marketplaceAccountHasProduct->productId.'-'.$marketplaceAccountHasProduct->productVariantId);
-			foreach ($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketplaceAccountHasProductSku) {
+			$writer->writeElement('ParentSKU',$prestashopHasProductHasMarketplaceHasShop->productId.'-'.$prestashopHasProductHasMarketplaceHasShop->productVariantId);
+            $marketplaceAccountHasProductSkus=\Monkey::app()->repoFactory->create('MarketplaceAccountHasProductSku')->findBy(['productId'=>$prestashopHasProductHasMarketplaceHasShop->productId,'productVariantId'=>$prestashopHasProductHasMarketplaceHasShop->productVariantId,'marketplaceId'=>$marketplaceAccount->marketplaceId,'marketplaceAccountId'=>$marketplaceAccount->id]);
+            foreach($marketplaceAccountHasProductSkus as $marketplaceAccountHasProductSku) {
 				$writer->startElement('Relation');
 				$writer->writeElement('SKU',$marketplaceAccountHasProductSku->productId.'-'.$marketplaceAccountHasProductSku->productVariantId.'-'.$marketplaceAccountHasProductSku->productSizeId);
 				$writer->writeElement('Type','Variation');

@@ -5,6 +5,9 @@ namespace bamboo\amazon\business\builders;
 use bamboo\core\base\CObjectCollection;
 use bamboo\domain\entities\CMarketplaceAccountHasProduct;
 use bamboo\domain\entities\CMarketplaceAccountHasProductSku;
+use bamboo\domain\entities\CPrestashopHasProductHasMarketplaceHasShop;
+use bamboo\domain\entities\CPrestashopHasProduct;
+use bamboo\domain\entities\CMarketplaceAccount;
 
 /**
  * Class CAmazonProductFeedBuilder
@@ -22,12 +25,14 @@ use bamboo\domain\entities\CMarketplaceAccountHasProductSku;
 class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 {
     protected $feedTypeName = '_POST_PRODUCT_DATA_';
+
     /**
-     * @param CObjectCollection $marketplaceAccountHasProducts
+     * @param CObjectCollection $prestashopHasProductHasMarketplaceHasShops
+     * @param CMarketplaceAccount $marketplaceAccount
      * @param bool $indent
      * @return $this
      */
-    public function prepare(CObjectCollection $marketplaceAccountHasProducts, $indent = false)
+    public function prepare(CMarketplaceAccount $marketplaceAccount,CObjectCollection $prestashopHasProductHasMarketplaceHasShops,$indent = false)
     {
         $writer = new \XMLWriter();
         $writer->openMemory();
@@ -35,24 +40,23 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
         $writer->writeElement('MessageType','Product');
         $writer->writeElement('PurgeAndReplace','true');
         $i = 0;
-        foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
-        {
+        foreach ($prestashopHasProductHasMarketplaceHasShops as $prestashopHasProductHasMarketplaceHasShop) {
             $i++;
             $writer->startElement('Message');
             $writer->writeElement('MessageID',$i);
             $writer->writeElement('OperationType','Update');
             $writer->startElement('Product');
-            $writer->writeRaw($this->writeParentProduct($marketplaceAccountHasProduct,$indent));
+            $writer->writeRaw($this->writeParentProduct($prestashopHasProductHasMarketplaceHasShop,$marketplaceAccount,$indent));
             $writer->endElement();
             $writer->endElement();
-
-            foreach($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketplaceAccountHasProductSku) {
+            $marketplaceAccountHasProductSkus = \Monkey::app()->repoFactory->create('MarketplaceAccountHasProductSku')->findBy(['productId' => $prestashopHasProductHasMarketplaceHasShop->productId,'productVariantId' => $prestashopHasProductHasMarketplaceHasShop->productVariantId,'marketplaceId' => $marketplaceAccount->marketplaceId,'marketplaceAccountId' => $marketplaceAccount->id]);
+            foreach ($marketplaceAccountHasProductSkus as $marketplaceAccountHasProductSku) {
                 $i++;
                 $writer->startElement('Message');
                 $writer->writeElement('MessageID',$i);
                 $writer->writeElement('OperationType','Update');
                 $writer->startElement('Product');
-                $writer->writeRaw($this->writeChildProduct($marketplaceAccountHasProductSku,$indent));
+                $writer->writeRaw($this->writeChildProduct($marketplaceAccountHasProductSku,$marketplaceAccount,$indent));
                 $writer->endElement();
                 $writer->endElement();
 
@@ -62,17 +66,22 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
         return $this;
     }
 
-    protected function writeProductData($productIncoming, $indent = false)
+    protected function writeProductData($productIncoming,$marketplaceAccount,$indent = false)
     {
-        if($productIncoming instanceof CMarketplaceAccountHasProduct) {
-            $marketplaceAccountHasProduct = $productIncoming;
+        if ($productIncoming instanceof CPrestashopHasProductHasMarketplaceHasShop) {
+            $prestashopHasProductHasMarketplaceHasShop = $productIncoming;
             $isParent = true;
-        } elseif($productIncoming instanceof CMarketplaceAccountHasProductSku) {
+            $product = $prestashopHasProductHasMarketplaceHasShop->product;
+        } elseif ($productIncoming instanceof CMarketplaceAccountHasProductSku) {
             $isParent = false;
-            $marketplaceAccountHasProduct = $productIncoming->marketplaceAccountHasProduct;
-        } else throw new \Exception('olè');
+            //   $prestashopHasProductHasMarketplaceHasShop = $productIncoming->prestashopHasProductHasMarketplaceHasShop;
+            $prestashopHasProductHasMarketplaceHasShop = \Monkey::app()->repoFactory->create('MarketplaceAccountHasProductSku')->findOneBy(['productId' => $productIncoming->productId,'productVariantId' => $productIncoming->productVariantId,'marketplaceId' => $marketplaceAccount->marketplaceId,'marketplaceAccountId' => $marketplaceAccount->id]);
+            //   $product=$prestashopHasProductHasMarketplaceHasShop->product;
+            $product = \Monkey::app()->repoFactory->create('Product')->findOneBy(['id' => $prestashopHasProductHasMarketplaceHasShop->productId,'productVariantId' => $prestashopHasProductHasMarketplaceHasShop->productVariantId]);
+        } else {
+            throw new \Exception('olè');
+        }
 
-        $product = $marketplaceAccountHasProduct->product;
 
         $writer = new \XMLWriter();
         $writer->openMemory();
@@ -92,24 +101,25 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
         $current = 0;
         foreach ($product->productSheetActual as $sheetPage) {
             $current++;
-            if($current > $max) break;
-            try{
+            if ($current > $max) break;
+            try {
                 $writer->writeElement('BulletPoint',$sheetPage->productDetail->productDetailTranslation->getFirst()->name);
-            } catch (\Throwable $e){}
+            } catch (\Throwable $e) {
+            }
 
         }
         $writer->writeElement('Manufacturer',$product->productBrand->name);
         $writer->writeElement('MfrPartNumber',$product->itemno);
 
-        $writer->writeElement('SearchTerms',$product->productBrand->name);
-        $writer->writeElement('SearchTerms',$product->itemno);
+        /*  $writer->writeElement('SearchTerms',$product->productBrand->name);
+          $writer->writeElement('SearchTerms',$product->itemno);*/
         $writer->writeElement('ItemType',$product->productCategory->getFirst()->getLocalizedName());
         $writer->writeElement('IsGiftWrapAvailable','true');
         $writer->writeElement('IsGiftMessageAvailable','true');
 
         $mCategoryIds = [];
-        foreach ($product->productCategory as $category ) {
-            foreach ($category->marketplaceAccountCategory->findByKeys(['marketplaceId'=>$marketplaceAccountHasProduct->marketplaceId,'marketplaceAccountId'=>$marketplaceAccountHasProduct->marketplaceAccountId,'isRelevant'=>1]) as $mCategory) {
+        foreach ($product->productCategory as $category) {
+            foreach ($category->marketplaceAccountCategory->findByKeys(['marketplaceId' => $marketplaceAccount->marketplaceId,'marketplaceAccountId' => $marketplaceAccount->id,'isRelevant' => 1]) as $mCategory) {
                 $mCategoryIds[] = $mCategory;
             }
         }
@@ -118,14 +128,31 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
         $writer->endElement();
         $writer->endElement();
         $writer->startElement('ProductData');
+        $findTypeBuilder = $product->getLocalizedProductCategories('<br>','/');
+        $builder = 'buildClothingAccessories';
+        if (strpos($findTypeBuilder,'Calzature') !== false) {
+            $builder = 'buildShoes';
+        }
+
+
+        if (strpos($findTypeBuilder,'Abbigliamento')  !== false) {
+            $builder = 'buildClothingAccessories';
+        }
+        if (strpos($findTypeBuilder,'Accessori')  !== false) {
+            $builder = 'buildClothingAccessories';
+        }
+        if (strpos($findTypeBuilder,'Borse')  !== false) {
+            $builder = 'buildClothingAccessories';
+        }
+
 
         //$builder = "build" . ucfirst($category->config['productDataElement']);
-        $builder = "buildShoes";
-        if (method_exists($this, $builder) && is_callable(array($this, $builder))) {
-            if($isParent) {
-                $writer->writeRaw($this->$builder($marketplaceAccountHasProduct,$indent));
+        $builder = "buildClothingAccessories";
+        if (method_exists($this,$builder) && is_callable(array($this,$builder))) {
+            if ($isParent) {
+                $writer->writeRaw($this->$builder($prestashopHasProductHasMarketplaceHasShop,$marketplaceAccount,$indent));
             } else {
-                $writer->writeRaw($this->$builder($productIncoming,$indent));
+                $writer->writeRaw($this->$builder($productIncoming,$marketplaceAccount,$indent));
             }
 
         } else {
@@ -136,26 +163,29 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
     }
 
     /**
-     * @param CMarketplaceAccountHasProduct $marketplaceAccountHasProduct
+     * @param CPrestashopHasProductHasMarketplaceHasShop $prestashopHasProductHasMarketplaceHasShop
+     * @param CMarketplaceAccount $marketplaceAccount
      * @param bool $indent
      * @return string
      */
-    protected function writeParentProduct(CMarketplaceAccountHasProduct $marketplaceAccountHasProduct, $indent = false)
+    protected
+    function writeParentProduct(CPrestashopHasProductHasMarketplaceHasShop $prestashopHasProductHasMarketplaceHasShop,CMarketplaceAccount $marketplaceAccount,$indent = false)
     {
-        $product = $marketplaceAccountHasProduct->product;
+        $product = $prestashopHasProductHasMarketplaceHasShop->product;
 
         $writer = new \XMLWriter();
         $writer->openMemory();
         $writer->setIndent($indent);
         $writer->writeElement('SKU',$product->printId());
-        $writer->writeRaw($this->writeProductData($marketplaceAccountHasProduct, $indent));
+        $writer->writeRaw($this->writeProductData($prestashopHasProductHasMarketplaceHasShop,$marketplaceAccount,$indent));
 
         return $writer->outputMemory();
     }
 
-    protected function writeChildProduct(CMarketplaceAccountHasProductSku $marketplaceAccountHasProductSku, $indent = false)
+    protected
+    function writeChildProduct(CMarketplaceAccountHasProductSku $marketplaceAccountHasProductSku,$marketplaceAccount,$indent = false)
     {
-        $marketplaceAccountHasProduct = $marketplaceAccountHasProductSku->marketplaceAccountHasProduct;
+        // $marketplaceAccountHasProduct = $marketplaceAccountHasProductSku->marketplaceAccountHasProduct;
         $productSkuSample = $marketplaceAccountHasProductSku->productSku->getFirst();
 
         $writer = new \XMLWriter();
@@ -166,18 +196,26 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
         $writer->writeElement('Type','EAN');
         $writer->writeElement('Value',$productSkuSample->ean);
         $writer->endElement();
-        $writer->writeRaw($this->writeProductData($marketplaceAccountHasProductSku, $indent));
+        $writer->writeRaw($this->writeProductData($marketplaceAccountHasProductSku,$marketplaceAccount,$indent));
         return $writer->outputMemory();
     }
 
-    protected function buildShoes($product, $indent = false)
+    protected
+    function buildShoes($product,$marketplaceAccount,$indent = false)
     {
-        if($product instanceof CMarketplaceAccountHasProduct) {
+        if ($product instanceof CPrestashopHasProductHasMarketplaceHasShop) {
             $isParent = true;
-        } elseif($product instanceof CMarketplaceAccountHasProductSku) {
+        } elseif ($product instanceof CMarketplaceAccountHasProductSku) {
             $isParent = false;
-            $marketplaceProductSku = $product;
-            $product = $marketplaceProductSku->marketplaceAccountHasProduct;
+            $prestashopHasProductHasMarketplaceHasShop = $product;
+            //  $product = $marketplaceProductSku->prestashopHasProductHasMarketplaceHasShop;
+            /*  $prestashopHasProductHasMarketplaceHasShop = \Monkey::app()->repoFactory->create('MarketplaceAccountHasProductSku')->findBy(['productId' => $marketplaceProductSku->productId,'productVariantId' => $marketplaceProductSku->productVariantId,'marketplaceHasShopId' => $marketplaceAccount->config['marketplaceHasShopId']]);
+              $product = $prestashopHasProductHasMarketplaceHasShop;
+              //   $prestashopHasProductHasMarketplaceHasShop = $productIncoming->prestashopHasProductHasMarketplaceHasShop;*/
+            $prestashopHasProductHasMarketplaceHasShop = \Monkey::app()->repoFactory->create('MarketplaceAccountHasProductSku')->findOneBy(['productId' => $product->productId,'productVariantId' => $product->productVariantId,'productSizeId' => $product->productSizeId,'marketplaceId' => $marketplaceAccount->marketplaceId,'marketplaceAccountId' => $marketplaceAccount->id]);
+            //   $product=$prestashopHasProductHasMarketplaceHasShop->product;
+            $product = \Monkey::app()->repoFactory->create('Product')->findOneBy(['id' => $prestashopHasProductHasMarketplaceHasShop->productId,'productVariantId' => $prestashopHasProductHasMarketplaceHasShop->productVariantId]);
+
         } else throw new \Exception('olè');
         $writer = new \XMLWriter();
         $writer->openMemory();
@@ -187,45 +225,141 @@ class CAmazonProductFeedBuilder extends AAmazonFeedBuilder
 
         $writer->startElement('VariationData');
         $writer->writeElement('Parentage',$isParent ? 'parent' : 'child');
-        if(!$isParent) {
-            $writer->writeElement('Size',$marketplaceProductSku->productSku->getFirst()->productSize->name);
+        if (!$isParent) {
+            $productSize = \Monkey::app()->repoFactory->create('ProductSize')->findOneBy(['id' => $prestashopHasProductHasMarketplaceHasShop->productSizeId]);
+            $writer->writeElement('Size',$productSize->name);
+            $writer->writeElement('Color',$product->productVariant->name);
         }
-        $writer->writeElement('Color',$product->product->productVariant->name);
+        if ($product instanceof CPrestashopHasProductHasMarketplaceHasShop) {
+            $writer->writeElement('Color',$product->product->productVariant->name);
+        }
         $writer->writeElement('VariationTheme','Size');
         $writer->endElement();
         $writer->startElement('ClassificationData');
-        if(!$isParent) {
-            $productSize = \Monkey::app()->repoFactory->create('ProductSku')->getStandardSizeFor($marketplaceProductSku->productSku->getFirst());
-            if(!is_null($productSize)) {
+        if (!$isParent) {
+            $productSize = \Monkey::app()->repoFactory->create('ProductSize')->findOneBy(['id' => $prestashopHasProductHasMarketplaceHasShop->productSizeId]);
+            if (!is_null($productSize)) {
+                $writer->writeElement('ColorMap',$product->productVariant->name);
                 $writer->writeElement('SizeMap',$productSize->name);
+                $writer->writeElement('IsAdultProduct','false');
+                $writer->writeElement('MaterialType','Leather');
+                // $writer->writeElement('sizeColor',$product->productVariant->name);
+                $writer->writeElement('TargetGender','unisex');
+
             } else {
-                $writer->writeElement('SizeMap',$marketplaceProductSku->productSku->getFirst()->productSize->name);
+                $writer->writeElement('ColorMap',$product->productVariant->name);
+                $writer->writeElement('SizeMap',$prestashopHasProductHasMarketplaceHasShop->productSku->getFirst()->productSize->name);
+
+                $writer->writeElement('IsAdultProduct','false');
+                $writer->writeElement('MaterialType','Leather');
+                $writer->writeElement('TargetGender','unisex');
+
+
             }
         }
+        // $writer->writeElement('target_gender','Female');
 
         $writer->endElement();
+        if (!$isParent) {
+            $writer->startElement('ShoeSizeComplianceData');
+            $writer->writeElement('AgeRangeDescription','adult');
+            $writer->writeElement('FootwearSizeSystem','eu_footwear_size_system');
+            $writer->writeElement('ShoeSizeAgeGroup','adult');
+            $writer->writeElement('ShoeSizeGender','women');
+            $writer->writeElement('ShoeSizeClass','numeric');
+            $writer->writeElement('ShoeSizeWidth','medium');
+            $productSize = \Monkey::app()->repoFactory->create('ProductSize')->findOneBy(['id' => $prestashopHasProductHasMarketplaceHasShop->productSizeId]);
+            if (!is_null($productSize)) {
+                $writer->writeElement('ShoeSize','numeric_' . $productSize->name);
+            } else {
+                $writer->writeElement('ShoeSize','numeric_' . $prestashopHasProductHasMarketplaceHasShop->productSku->getFirst()->productSize->name);
+            }
+            $writer->endElement();
+        }
+
+
         $writer->endElement();
         return $writer->outputMemory();
     }
 
-    protected function buildClothingAccessories($product, $indent = false)
+    protected
+    function buildClothingAccessories($product,$marketplaceAccount,$indent = false)
     {
-        if($product instanceof CMarketplaceAccountHasProduct) {
+        if ($product instanceof CPrestashopHasProductHasMarketplaceHasShop) {
             $isParent = true;
-        } elseif($product instanceof CMarketplaceAccountHasProductSku) {
+        } elseif ($product instanceof CMarketplaceAccountHasProductSku) {
             $isParent = false;
-            $marketplaceProductSku = $product;
-            $product = $marketplaceProductSku->marketplaceAccountHasProduct;
-        } else throw new \Exception('olè');
+            $prestashopHasProductHasMarketplaceHasShop = $product;
+            //  $product = $marketplaceProductSku->prestashopHasProductHasMarketplaceHasShop;
+            /*  $prestashopHasProductHasMarketplaceHasShop = \Monkey::app()->repoFactory->create('MarketplaceAccountHasProductSku')->findBy(['productId' => $marketplaceProductSku->productId,'productVariantId' => $marketplaceProductSku->productVariantId,'marketplaceHasShopId' => $marketplaceAccount->config['marketplaceHasShopId']]);
+              $product = $prestashopHasProductHasMarketplaceHasShop;
+              //   $prestashopHasProductHasMarketplaceHasShop = $productIncoming->prestashopHasProductHasMarketplaceHasShop;*/
+            $prestashopHasProductHasMarketplaceHasShop = \Monkey::app()->repoFactory->create('MarketplaceAccountHasProductSku')->findOneBy(['productId' => $product->productId,'productVariantId' => $product->productVariantId,'productSizeId' => $product->productSizeId,'marketplaceId' => $marketplaceAccount->marketplaceId,'marketplaceAccountId' => $marketplaceAccount->id]);
+            //   $product=$prestashopHasProductHasMarketplaceHasShop->product;
+            $product = \Monkey::app()->repoFactory->create('Product')->findOneBy(['id' => $prestashopHasProductHasMarketplaceHasShop->productId,'productVariantId' => $prestashopHasProductHasMarketplaceHasShop->productVariantId]);
 
+        } else throw new \Exception('olè');
         $writer = new \XMLWriter();
         $writer->openMemory();
         $writer->setIndent($indent);
-        $writer->startElement('Home');
+        $writer->startElement('ClothingAccessories');
+
+        $writer->startElement('VariationData');
         $writer->writeElement('Parentage',$isParent ? 'parent' : 'child');
         $writer->startElement('VariationData');
         $writer->writeElement('VariationTheme','Size');
         $writer->endElement();
+        $writer->startElement('ClassificationData');
+        if (!$isParent) {
+            $productSize = \Monkey::app()->repoFactory->create('ProductSize')->findOneBy(['id' => $prestashopHasProductHasMarketplaceHasShop->productSizeId]);
+            if (!is_null($productSize)) {
+                $findTypeDepartment = $product->getLocalizedProductCategories('<br>','/');
+                $department = '';
+                if (strpos($findTypeDepartment,'Uomo') !== False) {
+                    $department = 'uomo';
+                }
+
+                if (strpos($findTypeDepartment,'Donna') !== False) {
+                    $department = 'donna';
+                }
+
+                $writer->writeElement('Department',$department);
+                $writer->writeElement('ColorMap',$product->productVariant->name);
+                $writer->writeElement('SizeMap',$productSize->name);
+                $writer->writeElement('IsAdultProduct','false');
+                $writer->writeElement('MaterialType','Leather');
+                // $writer->writeElement('sizeColor',$product->productVariant->name);
+                $writer->writeElement('TargetGender','unisex');
+
+            } else {
+                $findTypeDepartment = $product->getLocalizedProductCategories('<br>','/');
+                switch (true) {
+                    case (strpos($findTypeDepartment,'Uomo')):
+                        $department = 'uomo';
+                        break;
+                    case (strpos($findTypeDepartment,'Donna')):
+                        $department = 'donna';
+                        break;
+                    default:
+                        $department = 'uomo';
+
+                }
+                $writer->writeElement('Department',$department);
+                $writer->writeElement('ColorMap',$product->productVariant->name);
+                $writer->writeElement('SizeMap',$prestashopHasProductHasMarketplaceHasShop->productSku->getFirst()->productSize->name);
+
+                $writer->writeElement('IsAdultProduct','false');
+                $writer->writeElement('MaterialType','Leather');
+                $writer->writeElement('TargetGender','unisex');
+
+
+            }
+        }
+        // $writer->writeElement('target_gender','Female');
+
+        $writer->endElement();
+
+
         $writer->endElement();
         return $writer->outputMemory();
     }

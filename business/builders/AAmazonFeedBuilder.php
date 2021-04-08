@@ -4,6 +4,7 @@
 namespace bamboo\amazon\business\builders;
 use bamboo\core\application\AApplication;
 use bamboo\core\base\CObjectCollection;
+use bamboo\domain\entities\CMarketplaceAccount;
 
 
 /**
@@ -56,5 +57,5 @@ abstract class AAmazonFeedBuilder
 		return $this->feedTypeName;
 	}
 
-	public abstract function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false);
+	public abstract function prepare(CMarketplaceAccount $marketplaceAccount,CObjectCollection $prestashopHasProductHasMarketplaceHasShops, $indent = false);
 }

@@ -4,6 +4,7 @@ namespace bamboo\amazon\business\builders;
 
 use bamboo\core\application\AApplication;
 use bamboo\core\base\CObjectCollection;
+use bamboo\domain\entities\CMarketplaceAccount;
 use bamboo\domain\entities\CMarketplaceAccountHasProductSku;
 use bamboo\domain\entities\CProduct;
 use bamboo\domain\entities\CProductSku;
@@ -25,16 +26,17 @@ class CAmazonInventoryFeedBuilder extends AAmazonFeedBuilder
 {
 	protected $feedTypeName = '_POST_INVENTORY_AVAILABILITY_DATA_';
 
-	public function prepare(CObjectCollection $marketplaceAccountHasProducts, $indent = false)
+	public function prepare(CMarketplaceAccount $marketplaceAccount, CObjectCollection $prestashopHasProductHasMarketplaceHasShops, $indent = false)
 	{
 		$writer = new \XMLWriter();
 		$writer->openMemory();
 		$writer->setIndent($indent);
 		$writer->writeElement('MessageType','Inventory');
 		$i = 0;
-		foreach ($marketplaceAccountHasProducts as $marketplaceAccountHasProduct)
+        foreach ($prestashopHasProductHasMarketplaceHasShops as $prestashopHasProductHasMarketplaceHasShop)
 		{
-			foreach ($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $sku) {
+            $marketplaceAccountHasProductSkus=\Monkey::app()->repoFactory->create('MarketplaceAccountHasProductSku')->findBy(['productId'=>$prestashopHasProductHasMarketplaceHasShop->productId,'productVariantId'=>$prestashopHasProductHasMarketplaceHasShop->productVariantId,'marketplaceId'=>$marketplaceAccount->marketplaceId,'marketplaceAccountId'=>$marketplaceAccount->id]);
+			foreach ($marketplaceAccountHasProductSkus as $sku) {
 				$i++;
 				$writer->startElement('Message');
 				$writer->writeElement('MessageID',$i);

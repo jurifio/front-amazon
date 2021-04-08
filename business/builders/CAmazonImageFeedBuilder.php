@@ -4,6 +4,7 @@ namespace bamboo\amazon\business\builders;
 
 use bamboo\core\application\AApplication;
 use bamboo\core\base\CObjectCollection;
+use bamboo\domain\entities\CMarketplaceAccount;
 use bamboo\domain\entities\CProduct;
 use bamboo\domain\entities\CProductPhoto;
 
@@ -24,7 +25,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 {
 	protected $feedTypeName = '_POST_PRODUCT_IMAGE_DATA_';
 
-	public function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false)
+	public function prepare(CMarketplaceAccount $marketplaceAccount, CObjectCollection $prestashopHasProductHasMarketplaceHasShops, $indent = false)
 	{
 		$writer = new \XMLWriter();
 		$writer->openMemory();
@@ -32,10 +33,10 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('MessageType','ProductImage');
 		$amazon = $this->app->cfg()->fetch("general","product-photo-host");
 		$i = 0;
-		foreach ($marketPlaceAccountHasProducts as $marketPlaceAccountHasProduct)
+        foreach ($prestashopHasProductHasMarketplaceHasShops as $prestashopHasProductHasMarketplaceHasShop)
 		{
-			$path = $amazon.$marketPlaceAccountHasProduct->product->productBrand->slug.'/';
-			foreach ($marketPlaceAccountHasProduct->product->productPhoto as $productPhoto) {
+			$path = $amazon.$prestashopHasProductHasMarketplaceHasShop->product->productBrand->slug.'/';
+			foreach ($prestashopHasProductHasMarketplaceHasShop->product->productPhoto as $productPhoto) {
 				/** @var $productPhoto CProductPhoto */
 				if(!$productPhoto->isBig()) continue;
 				$i++;
@@ -43,7 +44,7 @@ class CAmazonImageFeedBuilder extends AAmazonFeedBuilder
 				$writer->writeElement('MessageID',$i);
 				$writer->writeElement('OperationType','Update');
 				$writer->startElement('ProductImage');
-				$writer->writeElement('SKU',$marketPlaceAccountHasProduct->productId.'-'.$marketPlaceAccountHasProduct->productVariantId);
+				$writer->writeElement('SKU',$prestashopHasProductHasMarketplaceHasShop->productId.'-'.$prestashopHasProductHasMarketplaceHasShop->productVariantId);
 				switch ($productPhoto->order) {
 					case '1':
 						$type = "Main";

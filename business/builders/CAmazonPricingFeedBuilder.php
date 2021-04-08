@@ -4,6 +4,7 @@ namespace bamboo\amazon\business\builders;
 
 use bamboo\core\application\AApplication;
 use bamboo\core\base\CObjectCollection;
+use bamboo\domain\entities\CMarketplaceAccount;
 use bamboo\domain\entities\CProduct;
 use bamboo\domain\entities\CProductSku;
 
@@ -25,11 +26,12 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 	protected $feedTypeName = '_POST_PRODUCT_PRICING_DATA_';
 
 	/**
-	 * @param CObjectCollection $marketPlaceAccountHasProducts
+	 * @param CObjectCollection $prestashopHasProductHasMarketplaceHasShops
+     * @param CMarketplaceAccount $marketplaceAccount
 	 * @param bool $indent
 	 * @return $this
 	 */
-	public function prepare(CObjectCollection $marketPlaceAccountHasProducts, $indent = false)
+    public function prepare(CMarketplaceAccount $marketplaceAccount, CObjectCollection $prestashopHasProductHasMarketplaceHasShops, $indent = false)
 	{
 		$writer = new \XMLWriter();
 		$writer->openMemory();
@@ -37,16 +39,16 @@ class CAmazonPricingFeedBuilder extends AAmazonFeedBuilder
 		$writer->writeElement('MessageType','Price');
         $i = 0;
 		$i = 0;
-		foreach ($marketPlaceAccountHasProducts as $marketplaceAccountHasProduct)
+        foreach ($prestashopHasProductHasMarketplaceHasShops as $prestashopHasProductHasMarketplaceHasShop)
 		{
-			foreach ($marketplaceAccountHasProduct->marketplaceAccountHasProductSku as $marketPlaceAccountHasProductSku)
-			{
+            $marketplaceAccountHasProductSkus=\Monkey::app()->repoFactory->create('MarketplaceAccountHasProductSku')->findBy(['productId'=>$prestashopHasProductHasMarketplaceHasShop->productId,'productVariantId'=>$prestashopHasProductHasMarketplaceHasShop->productVariantId,'marketplaceId'=>$marketplaceAccount->marketplaceId,'marketplaceAccountId'=>$marketplaceAccount->id]);
+            foreach($marketplaceAccountHasProductSkus as $marketplaceAccountHasProductSku) {
 				$i++;
 				$writer->startElement('Message');
 				$writer->writeElement('MessageID',$i);
 				$writer->writeElement('OperationType','Update');
 				$writer->startElement('Price');
-				$writer->writeRaw($this->writePrice($marketPlaceAccountHasProductSku->productSku->getFirst(),$indent));
+				$writer->writeRaw($this->writePrice($marketplaceAccountHasProductSku->productSku->getFirst(),$indent));
 				$writer->endElement();
 				$writer->endElement();
 			}
